@@ -3,7 +3,7 @@
 ## 논문
 
 * U-Net: Convolutional Networks for Biomedical Image Segmentation
-https://arxiv.org/abs/1505.04597
+(https://arxiv.org/abs/1505.04597)
 ## 진행 내용
 
 * U-Net 논문 선정
