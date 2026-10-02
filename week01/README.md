@@ -43,8 +43,6 @@
 예시:
 
 - `week01_study.pdf`
-- `week01_summary.pdf`
-- `week01_presentation.pdf`
 
 ---
 
