@@ -40,7 +40,7 @@
 
 예시:
 
-- `week01_study.pdf`
+- `week01_AID_DL_Chapter1_1.jpynb`
 - `week01_summary.pdf`
 - `week01_presentation.pdf`
 
