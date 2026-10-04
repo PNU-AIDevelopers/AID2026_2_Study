@@ -43,7 +43,7 @@
 
 ## 📎 공부 내용 정리
 
-- `week01_summary.pdf`
+- [week01_summary.pdf](week01_summary.pdf)
 
 ---
 
