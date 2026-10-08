@@ -59,6 +59,14 @@
   #q:focus { border-bottom-color: var(--fg); }
   #q::placeholder { color: var(--muted); }
 
+  #facets { margin-top: 16px; font-size: .8125rem; color: var(--muted); }
+  .facet { display: flex; margin: 0; }
+  .facet + .facet { margin-top: 6px; }
+  .facet-label { flex: none; width: 3.25rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: 2px 14px; min-width: 0; }
+  .chip .n { margin-left: .35em; opacity: .75; font-variant-numeric: tabular-nums; }
+  .chip[aria-pressed="true"] { color: var(--fg); text-decoration: underline; text-underline-offset: 3px; }
+
   #notice { margin-top: 16px; font-size: .8125rem; color: var(--muted); }
   #notice p { margin: 0; }
 
@@ -78,10 +86,13 @@
   .title { font-weight: 500; overflow-wrap: anywhere; }
   .why { margin: 2px 0 0; overflow-wrap: anywhere; }
   .why a { text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
-  .by, .meta { color: var(--muted); }
-  .meta { margin: 4px 0 0; font-size: .8125rem; }
-  .tag { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
-  .tag:hover { color: var(--fg); }
+  .by, .meta, .info { color: var(--muted); }
+  .meta, .info { margin: 4px 0 0; font-size: .8125rem; }
+  .info { margin-top: 2px; }
+  .abstract { margin: 8px 0 0; font-size: .875rem; overflow-wrap: anywhere; }
+  .tag, .chip, .act { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  .tag:hover, .chip:hover, .act:hover { color: var(--fg); }
+  .act { text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
   .empty { margin: 0; color: var(--muted); }
 
   footer { margin-top: 72px; font-size: .8125rem; color: var(--muted); }
@@ -95,7 +106,19 @@
     <p class="lede">Papers we want to read, and the ones we've reviewed. <a id="add" href="https://github.com/cho104/AIResearchers/tree/main/docs/papers" target="_blank" rel="noopener">Add yours</a></p>
   </header>
 
-  <input id="q" type="search" placeholder="Search titles, people, #tags" aria-label="Search papers" autocomplete="off" spellcheck="false">
+  <input id="q" type="search" placeholder="Search titles, authors, people, #tags" aria-label="Search papers" autocomplete="off" spellcheck="false">
+  <div id="facets" hidden>
+    <p class="facet" id="tag-chips" aria-label="Filter by tag"></p>
+    <p class="facet" id="people-chips" aria-label="Filter by person"></p>
+    <p class="facet" id="sorts" aria-label="Sort papers">
+      <span class="facet-label">Sort</span>
+      <span class="chips">
+        <button class="chip" type="button" data-sort="person">person</button>
+        <button class="chip" type="button" data-sort="title">title</button>
+        <button class="chip" type="button" data-sort="wanted">most wanted</button>
+      </span>
+    </p>
+  </div>
   <div id="notice" role="status" hidden></div>
 
   <section aria-labelledby="queue-h">
@@ -123,6 +146,10 @@ const BRANCH = 'main';
 const DIR = 'papers';           // next to this page on the site
 const REPO_DIR = 'docs/papers'; // the same folder in the repo
 const CACHE_KEY = 'air-paper-queue';
+const META_KEY = 'air-paper-meta';
+const META_TTL = 7 * 24 * 60 * 60 * 1000; // look papers up again weekly, for citation counts
+const S2_BATCH = 'https://api.semanticscholar.org/graph/v1/paper/batch';
+const S2_FIELDS = 'title,authors,year,venue,publicationVenue,citationCount,abstract,citationStyles';
 
 const MD_LINK = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/;
 const BARE_LINK = /<?(https?:\/\/[^\s<>]+)>?/;
@@ -264,7 +291,7 @@ function collect(files) {
     for (const p of list.papers) {
       const key = paperKey(p.url);
       let paper = byKey.get(key);
-      if (!paper) byKey.set(key, paper = { url: p.url, title: null, reviewed: false, tags: [], notes: [], people: [] });
+      if (!paper) byKey.set(key, paper = { key, order: byKey.size, url: p.url, title: null, reviewed: false, tags: [], notes: [], people: [] });
       paper.title ||= p.title;
       paper.reviewed ||= p.reviewed;
       for (const t of p.tags) if (!paper.tags.some(x => x.toLowerCase() === t.toLowerCase())) paper.tags.push(t);
@@ -273,6 +300,77 @@ function collect(files) {
     }
   }
   return { papers: [...byKey.values()], problems };
+}
+
+// ---------- Authors, venue and abstract from Semantic Scholar ----------
+
+let lookups = {}; // paper key -> { at: when we looked, d: details or null }
+try { lookups = JSON.parse(localStorage.getItem(META_KEY)) || {}; } catch {}
+
+// The ID Semantic Scholar knows a paper by, or null for sites it can't look up (like OpenReview).
+function s2Id(paper) {
+  if (paper.key.startsWith('arxiv:')) return 'ARXIV:' + paper.key.slice(6);
+  try {
+    const u = new URL(paper.url);
+    const host = u.hostname.toLowerCase().replace(/^www\./, '');
+    let m;
+    if (host === 'doi.org' || host === 'dx.doi.org') return 'DOI:' + decodeURIComponent(u.pathname.slice(1));
+    if (host === 'semanticscholar.org' && (m = u.pathname.match(/([0-9a-f]{40})\/?$/))) return m[1];
+    if (host === 'aclanthology.org' && (m = u.pathname.match(/^\/([^/]+?)(?:\.pdf)?\/?$/))) return 'ACL:' + m[1];
+    if (/(^|\.)(aclweb\.org|acm\.org|biorxiv\.org)$/.test(host)) return 'URL:' + paper.url;
+  } catch {}
+  return null;
+}
+
+// Keep only what the page shows. Venues use their short name (CVPR, ICLR) when there is one.
+function trimMeta(d) {
+  if (!d) return null;
+  const short = (d.publicationVenue?.alternate_names || []).find(n => !/\s/.test(n) && n.length <= 10);
+  let venue = short || d.venue || '';
+  if (/^arxiv(\.org)?$/i.test(venue)) venue = 'arXiv';
+  return {
+    title: d.title || null,
+    authors: (d.authors || []).map(a => a.name).filter(Boolean),
+    year: d.year || null,
+    venue,
+    cited: d.citationCount ?? null,
+    abstract: d.abstract || '',
+    bibtex: d.citationStyles?.bibtex || '',
+  };
+}
+
+const metaOf = p => lookups[p.key]?.d || null;
+
+// The free API is often busy (429, which the browser only sees as a failed fetch), so try a few times.
+async function s2Batch(ids) {
+  let error;
+  for (const wait of [0, 2000, 5000]) {
+    await new Promise(r => setTimeout(r, wait));
+    try {
+      const res = await fetch(`${S2_BATCH}?fields=${S2_FIELDS}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+      if (res.ok) return await res.json();
+      error = new Error(`Semantic Scholar answered ${res.status}.`);
+    } catch (err) { error = err; }
+  }
+  throw error;
+}
+
+// Look up papers we haven't seen (or not this week) in one request. Returns whether anything changed.
+async function loadMeta(list) {
+  const now = Date.now();
+  const todo = list.map(p => ({ key: p.key, id: s2Id(p) }))
+    .filter(x => x.id && !(lookups[x.key] && now - lookups[x.key].at < META_TTL));
+  for (let i = 0; i < todo.length; i += 500) {
+    const chunk = todo.slice(i, i + 500);
+    const found = await s2Batch(chunk.map(x => x.id));
+    chunk.forEach((x, j) => { lookups[x.key] = { at: now, d: trimMeta(found[j]) }; });
+  }
+  if (todo.length) try { localStorage.setItem(META_KEY, JSON.stringify(lookups)); } catch {}
+  return todo.length > 0;
 }
 
 // ---------- Rendering ----------
@@ -294,8 +392,6 @@ function link(href, text, cls) {
 
 const host = url => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; } };
 const shortUrl = url => url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
-const fileUrl = who => `https://github.com/${REPO}/blob/${BRANCH}/${REPO_DIR}/${encodeURIComponent(who.file)}`
-  + (who.line ? `?plain=1#L${who.line}` : '');
 
 // Notes are plain text, except that links inside them stay clickable.
 function appendNote(node, text) {
@@ -308,9 +404,61 @@ function appendNote(node, text) {
   node.append(text.slice(last));
 }
 
+function button(cls, text, onClick) {
+  const b = el('button', cls, text);
+  b.type = 'button';
+  b.addEventListener('click', onClick);
+  return b;
+}
+
+// Clicking the tag or name that's already the search clears it.
+function setQuery(q) {
+  search.value = search.value.trim().toLowerCase() === q.toLowerCase() ? '' : q;
+  filter();
+  search.scrollIntoView({ block: 'nearest' });
+}
+
+const titleOf = p => p.title || metaOf(p)?.title || shortUrl(p.url);
+
+// "Kaiming He et al. · 2021 · CVPR · 13,058 citations · Abstract · BibTeX", with the abstract under it.
+function appendInfo(li, info) {
+  const line = el('p', 'info'), parts = [];
+  if (info.authors.length) parts.push(info.authors[0] + (info.authors.length > 1 ? ' et al.' : ''));
+  if (info.year) parts.push(String(info.year));
+  if (info.venue) parts.push(info.venue);
+  if (info.cited != null) parts.push(`${info.cited.toLocaleString('en')} citation${info.cited === 1 ? '' : 's'}`);
+
+  const abstract = el('p', 'abstract', info.abstract);
+  abstract.hidden = true;
+  if (info.abstract) {
+    const toggle = button('act', 'Abstract', () => {
+      abstract.hidden = !abstract.hidden;
+      toggle.setAttribute('aria-expanded', !abstract.hidden);
+    });
+    toggle.setAttribute('aria-expanded', false);
+    parts.push(toggle);
+  }
+  if (info.bibtex) {
+    const copy = button('act', 'BibTeX', async () => {
+      try { await navigator.clipboard.writeText(info.bibtex); copy.textContent = 'Copied'; }
+      catch { copy.textContent = "Couldn't copy"; }
+      setTimeout(() => { copy.textContent = 'BibTeX'; }, 1500);
+    });
+    copy.title = 'Copy BibTeX';
+    parts.push(copy);
+  }
+
+  if (!parts.length) return;
+  parts.forEach((part, i) => line.append(i ? ' · ' : '', part));
+  li.append(line);
+  if (info.abstract) li.append(abstract);
+}
+
 function renderPaper(p) {
   const li = el('li');
-  li.append(link(p.url, p.title || shortUrl(p.url), 'title'));
+  const info = metaOf(p);
+  li.append(link(p.url, titleOf(p), 'title'));
+  if (info) appendInfo(li, info);
 
   for (const note of p.notes) {
     const why = el('p', 'why');
@@ -320,25 +468,54 @@ function renderPaper(p) {
   }
 
   const meta = el('p', 'meta');
-  p.people.forEach((who, i) => meta.append(i ? ', ' : '', link(fileUrl(who), who.name)));
+  p.people.forEach((who, i) => meta.append(i ? ', ' : '', button('tag', who.name, () => setQuery(who.name))));
   meta.append(' · ' + host(p.url));
-  p.tags.forEach((t, i) => {
-    const tag = el('button', 'tag', '#' + t);
-    tag.type = 'button';
-    tag.addEventListener('click', () => {
-      search.value = '#' + t;
-      filter();
-      search.scrollIntoView({ block: 'nearest' });
-    });
-    meta.append(i ? ' ' : ' · ', tag);
-  });
+  p.tags.forEach((t, i) => meta.append(i ? ' ' : ' · ', button('tag', '#' + t, () => setQuery('#' + t))));
   li.append(meta);
 
   li.dataset.text = [
     p.title, p.url, host(p.url),
     ...p.notes.map(n => n.text), ...p.people.map(w => w.name), ...p.tags.map(t => '#' + t),
+    info?.title, ...(info?.authors || []), info?.year, info?.venue,
   ].filter(Boolean).join(' ').toLowerCase();
   return li;
+}
+
+// The tag and people rows above the list, most used first.
+function chipRow(id, label, names) {
+  const counts = new Map();
+  for (const name of names) {
+    const c = counts.get(name.toLowerCase()) || { name, n: 0 };
+    c.n++;
+    counts.set(name.toLowerCase(), c);
+  }
+  const chips = [...counts.values()]
+    .sort((a, b) => b.n - a.n || collator.compare(a.name, b.name))
+    .map(c => {
+      const chip = button('chip', c.name, () => setQuery(c.name));
+      chip.dataset.q = c.name.toLowerCase();
+      chip.append(el('span', 'n', c.n));
+      return chip;
+    });
+  const wrap = el('span', 'chips');
+  wrap.append(...chips);
+  $(id).replaceChildren(el('span', 'facet-label', label), wrap);
+  $(id).hidden = chips.length === 0;
+}
+
+// Searches and sorts live in the URL (#q=%23vlm&sort=title), so a filtered view can be shared.
+function readHash() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  search.value = h.get('q') || '';
+  sortBy = Object.hasOwn(SORTS, h.get('sort')) ? h.get('sort') : 'person';
+}
+
+function writeHash() {
+  const h = new URLSearchParams();
+  if (search.value.trim()) h.set('q', search.value.trim());
+  if (sortBy !== 'person') h.set('sort', sortBy);
+  const hash = h.toString() ? '#' + h : '';
+  if (hash !== location.hash) history.replaceState(null, '', hash || location.pathname + location.search);
 }
 
 function filter() {
@@ -356,6 +533,11 @@ function filter() {
     empty.hidden = shown > 0;
   }
   $('reviewed-section').hidden = $('reviewed').children.length === 0;
+
+  const q = search.value.trim().toLowerCase();
+  for (const chip of $('facets').querySelectorAll('[data-q]')) chip.setAttribute('aria-pressed', chip.dataset.q === q);
+  for (const b of $('facets').querySelectorAll('[data-sort]')) b.setAttribute('aria-pressed', b.dataset.sort === sortBy);
+  writeHash();
 }
 
 function showNotice(lines) {
@@ -364,12 +546,30 @@ function showNotice(lines) {
   box.hidden = lines.length === 0;
 }
 
-function render(files, notes = []) {
-  const { papers, problems } = collect(files);
-  $('queue').replaceChildren(...papers.filter(p => !p.reviewed).map(renderPaper));
-  $('reviewed').replaceChildren(...papers.filter(p => p.reviewed).map(renderPaper));
-  showNotice([...notes, ...problems]);
+const collator = new Intl.Collator(['ko', 'en'], { numeric: true, sensitivity: 'base' });
+const SORTS = {
+  person: (a, b) => collator.compare(a.people[0].name, b.people[0].name) || a.order - b.order,
+  title: (a, b) => collator.compare(titleOf(a), titleOf(b)) || a.order - b.order,
+  wanted: (a, b) => b.people.length - a.people.length || SORTS.person(a, b),
+};
+
+let papers = [], sortBy = 'person';
+
+function draw() {
+  const sorted = [...papers].sort(SORTS[sortBy]);
+  $('queue').replaceChildren(...sorted.filter(p => !p.reviewed).map(renderPaper));
+  $('reviewed').replaceChildren(...sorted.filter(p => p.reviewed).map(renderPaper));
+  chipRow('tag-chips', 'Tags', papers.flatMap(p => p.tags.map(t => '#' + t)));
+  chipRow('people-chips', 'People', papers.flatMap(p => p.people.map(w => w.name)));
+  $('facets').hidden = papers.length === 0;
   filter();
+}
+
+function render(files, notes = []) {
+  const collected = collect(files);
+  papers = collected.papers;
+  showNotice([...notes, ...collected.problems]);
+  draw();
 }
 
 // ---------- Start ----------
@@ -380,6 +580,11 @@ search.addEventListener('input', filter);
 search.addEventListener('keydown', e => {
   if (e.key === 'Escape') { search.value = ''; filter(); }
 });
+for (const b of $('facets').querySelectorAll('[data-sort]')) {
+  b.addEventListener('click', () => { sortBy = b.dataset.sort; draw(); });
+}
+window.addEventListener('hashchange', () => { readHash(); draw(); });
+readHash();
 document.addEventListener('keydown', e => {
   if (e.key === '/' && document.activeElement !== search && !e.metaKey && !e.ctrlKey && !e.altKey) {
     e.preventDefault();
@@ -401,7 +606,11 @@ loadFiles()
   .catch(err => {
     if (saved) render(saved.files, [`Showing the last copy this browser loaded. ${err.message}`]);
     else $('queue-empty').textContent = `Couldn't load the list. ${err.message}`;
-  });
+  })
+  // Paper details are extras: if the lookup fails, the list works without them.
+  .then(() => loadMeta(papers))
+  .then(changed => { if (changed) draw(); })
+  .catch(err => console.warn(`Couldn't look papers up on Semantic Scholar. ${err.message}`));
 </script>
 </body>
 </html>
