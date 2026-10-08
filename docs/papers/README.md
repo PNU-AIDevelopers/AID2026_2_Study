@@ -21,9 +21,9 @@ To add more papers later, add lines to your file and open another PR.
 ## Format
 
 - The `# heading` is your name on the site.
-- Each paper is one line starting with `- `. Write `[Title](link)`, or paste the bare link.
+- Each paper is one line starting with `- `. Write `[Title](link)`, or paste the bare link. The site fills in the title, authors, venue and abstract from Semantic Scholar where it can.
 - Anything after the link is your one line on why.
-- Words starting with `#` are tags, like `#llm`, or `#rejected` for the OpenReview review.
+- Words starting with `#` are tags. Use the shared ones where they fit: `#ssl`, `#vlm`, `#segmentation`, `#diffusion`, `#agents`, and `#rejected` for the OpenReview review. Add a new one only if none fits.
 - Papers show as **TBD** until you add `#reviewed` to the line.
 - If two people add the same paper, the site shows it once with both names.
 - Other headings and indented lines stay in your file but don't show on the site.
