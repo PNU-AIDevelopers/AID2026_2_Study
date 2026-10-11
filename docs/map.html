@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIResearchers Paper Map</title>
+<meta name="description" content="How the papers on the AIResearchers study group's list cite each other, and what else they suggest reading.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Ccircle cx='17' cy='17' r='17' fill='%23111'/%3E%3Cpath d='M10.5 21.5 17.5 10.5 24.5 19 10.5 21.5M24.5 19 19.5 26' fill='none' stroke='%23fff' stroke-width='1.6' stroke-opacity='.7'/%3E%3Ccircle cx='10.5' cy='21.5' r='3.2' fill='%23fff'/%3E%3Ccircle cx='17.5' cy='10.5' r='2.4' fill='%23111' stroke='%23fff' stroke-width='1.5'/%3E%3Ccircle cx='24.5' cy='19' r='2.7' fill='%23fff'/%3E%3Ccircle cx='19.5' cy='26' r='1.6' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="site.css">
+<style>
+  .stage { overflow-x: auto; border-radius: var(--radius); background: var(--panel); }
+  .stage svg { display: block; font-family: var(--font); }
+  .stage .empty { padding: 120px 0; text-align: center; }
+
+  .year { font-size: 11px; fill: var(--muted); text-anchor: middle; font-variant-numeric: tabular-nums; }
+  .guide { stroke: var(--line); stroke-dasharray: 2 4; }
+  .divider { stroke: var(--line); }
+  .band { font-size: 11px; fill: var(--muted); paint-order: stroke; stroke: var(--panel); stroke-width: 4px; }
+  .edge { fill: none; stroke: var(--edge); stroke-width: 1.25; marker-end: url(#arrow); }
+  .edge.on { stroke: var(--fg); marker-end: url(#arrow-on); }
+  #arrow path { fill: var(--edge); }
+  #arrow-on path { fill: var(--fg); }
+  .node { cursor: pointer; outline: none; }
+  .node .dot { fill: var(--panel); stroke: var(--c); stroke-width: 2; }
+  .node.reviewed .dot { fill: var(--c); }
+  .node .ring { fill: none; stroke: none; stroke-width: 1.5; }
+  .node:focus-visible .ring, .node[aria-pressed="true"] .ring { stroke: var(--fg); }
+  .node text { font-size: 12px; letter-spacing: -.01em; fill: var(--fg); text-anchor: middle; paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }
+  .node, .edge { transition: opacity .15s; }
+  .faded, .focusing .node, .focusing .edge { opacity: .16; }
+  .focusing .on { opacity: 1; }
+
+  .key { flex: none; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--fg); }
+  .key.filled { background: var(--fg); }
+  .key.big { width: 14px; height: 14px; margin: 0 -2px; border-color: var(--muted); background: var(--muted); }
+  .side-key .ico { width: 14px; height: 14px; margin: 0 -2px; }
+
+  #detail { margin-top: 16px; }
+  #detail .sheet-title { margin-top: 8px; font-size: 20px; }
+  #detail .sheet-title a:hover { text-decoration: underline; text-underline-offset: 4px; }
+  #detail .grid { margin-top: 4px; }
+  #detail h2:not(.sheet-title) { margin-top: 26px; }
+  .main-section { margin-top: 48px; }
+  .section-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .section-head h2 { margin: 0; }
+  .caption-by { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .caption-by .link { color: var(--fg); }
+  .card-bottom .ico { width: 14px; height: 14px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="./" aria-label="AIResearchers home">
+    <svg class="mark" viewBox="0 0 34 34" aria-hidden="true"><circle class="mark-bg" cx="17" cy="17" r="17"/><g class="mark-graph"><path d="M10.5 21.5 17.5 10.5 24.5 19 10.5 21.5M24.5 19 19.5 26"/><circle class="full" cx="10.5" cy="21.5" r="3.2"/><circle class="hollow" cx="17.5" cy="10.5" r="2.4"/><circle class="full" cx="24.5" cy="19" r="2.7"/><circle class="full" cx="19.5" cy="26" r="1.6"/></g></svg>
+    <span class="wordmark" aria-hidden="true">AIResearchers</span>
+  </a>
+  <nav class="nav" aria-label="Pages">
+    <a class="pill" href="./"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/></svg>Queue</a>
+    <a class="pill" href="map.html" aria-current="page"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.75" cy="4.5" r="1.75"/><circle cx="12.25" cy="4.5" r="1.75"/><circle cx="8" cy="11.75" r="1.75"/><path d="M5.5 4.5h5M4.7 6l2.4 4.2M11.3 6 8.9 10.2"/></svg>Map</a>
+  </nav>
+  <div class="top-end">
+    <a class="pill hide-sm repo" href="https://github.com/cho104/AIResearchers" target="_blank" rel="noopener">GitHub</a>
+    <a class="pill solid add" href="https://github.com/cho104/AIResearchers/tree/main/docs/papers" target="_blank" rel="noopener">Add a paper</a>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Filters">
+    <div class="side-group" id="tag-group"></div>
+    <div class="side-group">
+      <p class="side-h">Reading the map</p>
+      <ul class="side-key">
+        <li><span class="key filled"></span>Reviewed</li>
+        <li><span class="key"></span>To read</li>
+        <li><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8h-11M6 4.5 2.5 8 6 11.5"/></svg>Points to what it cites</li>
+        <li><span class="key big"></span>Bigger is cited more</li>
+      </ul>
+    </div>
+    <div class="side-foot">
+      <a class="gh repo" href="https://github.com/cho104/AIResearchers" target="_blank" rel="noopener" aria-label="AIResearchers on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
+      <a class="add" href="https://github.com/cho104/AIResearchers/tree/main/docs/papers" target="_blank" rel="noopener">How to add a paper</a>
+      <a class="source" href="https://github.com/cho104/AIResearchers/tree/main/docs/papers" target="_blank" rel="noopener">Our lists on GitHub</a>
+      <a href="https://www.semanticscholar.org" target="_blank" rel="noopener">Citations from Semantic Scholar</a>
+    </div>
+  </aside>
+
+  <header class="page-head">
+    <h1>Paper Map</h1>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <span class="summary" id="summary"></span>
+      <span></span>
+      <a class="pill outline" href="./">Open queue</a>
+    </div>
+
+    <div id="notice" role="status" hidden></div>
+
+    <div class="stage" id="stage"><p class="empty">Loading…</p></div>
+    <noscript><p class="empty">This page needs JavaScript. The lists themselves are in docs/papers/ on GitHub.</p></noscript>
+
+    <section id="detail" class="panel" aria-labelledby="detail-h" hidden></section>
+
+    <section class="main-section" aria-labelledby="sugg-h">
+      <div class="section-head">
+        <h2 id="sugg-h">Suggested <span class="n" id="sugg-count"></span></h2>
+        <div class="segmented" role="group" aria-label="Suggest">
+          <button type="button" data-mode="foundations" title="Papers our papers cite">Foundations</button>
+          <button type="button" data-mode="followups" title="Papers that cite our papers">Follow-ups</button>
+        </div>
+      </div>
+      <p class="note" id="sugg-note"></p>
+      <ol class="grid" id="sugg"></ol>
+      <div class="more"><button id="more" class="pill outline" type="button" hidden>Show more</button></div>
+    </section>
+  </main>
+</div>
+
+<script src="shared.js"></script>
+<script>
+// Reading the lists lives in shared.js, which the queue uses too.
+const GRAPH_KEY = 'air-paper-graph';
+const GRAPH_TTL = 7 * 24 * 60 * 60 * 1000; // look papers up again weekly, for citation counts
+const GRAPH_FIELDS = 'title,year,citationCount,references.paperId,references.title,references.year,references.citationCount,references.externalIds';
+const S2_RELATED = 'https://api.semanticscholar.org/recommendations/v1/papers/forpaper/';
+const OPENALEX = 'https://api.openalex.org/works';
+const OA_IDS_KEY = 'air-paper-openalex';
+const OA_IDS_TTL = 30 * 24 * 60 * 60 * 1000; // which OpenAlex records are ours rarely changes
+const CITERS_KEY = 'air-paper-citers';
+const CITERS_TTL = 7 * 24 * 60 * 60 * 1000;
+const CITERS_PER_PAPER = 50; // each paper's most cited citers; together they're where follow-ups come from
+const PAGE = 12; // suggestions shown at a time
+
+// Map layout, in pixels. LANE is the room a line gets when it passes through a year it skips.
+// Papers sit LIFT above the middle of their row, to leave room for a two-line label.
+const PAD_X = 76, TOP = 48, ROW = 72, LIFT = 12, LANE = 14, BAND_GAP = 32, MIN_COL = 140, BOTTOM = 16;
+const LABEL_LINE = 20; // characters, so labels in neighboring years don't touch
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+// ---------- References from Semantic Scholar ----------
+
+let graph = {}; // paper key -> { at: when we looked, d: { id, title, year, cited, refs } or null }
+try { graph = JSON.parse(localStorage.getItem(GRAPH_KEY)) || {}; } catch {}
+
+// A link for a paper we only know from Semantic Scholar: arXiv when there is one, then DOI, then its Semantic Scholar page.
+function s2Link(d) {
+  const ids = d.externalIds || {};
+  if (ids.ArXiv) return 'https://arxiv.org/abs/' + ids.ArXiv;
+  if (ids.DOI) return 'https://doi.org/' + ids.DOI;
+  return 'https://www.semanticscholar.org/paper/' + d.paperId;
+}
+
+const brief = d => ({ id: d.paperId, title: d.title, year: d.year || null, cited: d.citationCount ?? null, url: s2Link(d) });
+
+function trimGraph(d) {
+  if (!d?.paperId) return null;
+  return {
+    id: d.paperId,
+    title: d.title || null,
+    year: d.year || null,
+    cited: d.citationCount ?? null,
+    refs: (d.references || []).filter(r => r.paperId && r.title).map(brief),
+  };
+}
+
+// Look up papers we haven't seen (or not this week). Returns whether anything changed.
+async function loadGraph(list) {
+  const now = Date.now();
+  const todo = list.map(p => ({ key: p.key, id: s2Id(p) }))
+    .filter(x => x.id && !(graph[x.key] && now - graph[x.key].at < GRAPH_TTL));
+  // Reference lists make each answer large, so ask about fewer papers per request than the queue does.
+  for (let i = 0; i < todo.length; i += 100) {
+    const chunk = todo.slice(i, i + 100);
+    const found = await fetchJSON(`${S2_BATCH}?fields=${GRAPH_FIELDS}`, { ids: chunk.map(x => x.id) });
+    chunk.forEach((x, j) => { graph[x.key] = { at: now, d: trimGraph(found[j]) }; });
+  }
+  if (todo.length) try { localStorage.setItem(GRAPH_KEY, JSON.stringify(graph)); } catch {}
+  return todo.length > 0;
+}
+
+// Papers Semantic Scholar finds similar to one of ours, from all of computer science rather than only recent ones.
+const related = new Map(); // S2 id -> { state: 'loading' | 'done' | 'error', papers, error }
+
+async function findRelated(n) {
+  const id = n.g.id;
+  related.set(id, { state: 'loading' });
+  drawDetail();
+  try {
+    const res = await fetchJSON(`${S2_RELATED}${id}?from=all-cs&limit=20&fields=title,year,citationCount,externalIds`);
+    related.set(id, { state: 'done', papers: (res.recommendedPapers || []).filter(d => d.paperId && d.title).map(brief) });
+  } catch (err) {
+    related.set(id, { state: 'error', error: err.message });
+  }
+  drawDetail();
+}
+
+// ---------- Papers that cite ours, from OpenAlex ----------
+// Semantic Scholar lists a paper's citers newest first and can't sort them, and CLIP alone has tens of
+// thousands. OpenAlex can sort them by citations, so we ask it for each paper's most cited citers.
+
+let oaIds = {}; // paper key -> { at, ids: our paper's OpenAlex records }
+try { oaIds = JSON.parse(localStorage.getItem(OA_IDS_KEY)) || {}; } catch {}
+let citers = null; // { sig, at, works: paper key -> [{ id, title, year, cited, url, refs: which of ours it cites }] }
+try { citers = JSON.parse(localStorage.getItem(CITERS_KEY)); } catch {}
+let citersState = 'idle', citersError = '';
+
+const norm = t => t.toLowerCase().replace(/<[^>]+>/g, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+const oaId = url => url.split('/').pop();
+
+// arXiv for preprints, else the DOI, else the OpenAlex page.
+function oaLink(w) {
+  const doi = (w.doi || '').replace(/^https:\/\/doi\.org\//, '');
+  const arxiv = doi.match(/^10\.48550\/arxiv\.(.+)$/i);
+  return arxiv ? 'https://arxiv.org/abs/' + arxiv[1] : doi ? 'https://doi.org/' + doi : w.id;
+}
+
+// Find each of our papers on OpenAlex by its exact title. A paper often has a preprint and a published
+// record with citations split between them, so we keep every record with the title.
+async function loadCiters() {
+  const now = Date.now();
+  const todo = nodes.filter(n => !(oaIds[n.p.key] && now - oaIds[n.p.key].at < OA_IDS_TTL));
+  await inBatches(todo, async n => {
+    const title = n.g.title || titleOf(n);
+    const res = await fetchJSON(`${OPENALEX}?search=${encodeURIComponent(title)}&per_page=10&select=id,title`);
+    oaIds[n.p.key] = { at: now, ids: res.results.filter(w => w.title && norm(w.title) === norm(title)).map(w => oaId(w.id)) };
+  });
+  if (todo.length) try { localStorage.setItem(OA_IDS_KEY, JSON.stringify(oaIds)); } catch {}
+
+  // Which of ours each citer cites is worked out when it's fetched, so a change to our list fetches again.
+  const sig = nodes.map(n => n.p.key + '=' + (oaIds[n.p.key]?.ids || []).join('+')).sort().join(' ');
+  if (citers?.sig === sig && now - citers.at < CITERS_TTL) return;
+  const ours = new Set(nodes.flatMap(n => oaIds[n.p.key]?.ids || []));
+  const works = {};
+  await inBatches(nodes.filter(n => oaIds[n.p.key]?.ids.length), async n => {
+    const res = await fetchJSON(`${OPENALEX}?filter=cites:${oaIds[n.p.key].ids.join('|')}&sort=cited_by_count:desc`
+      + `&per_page=${CITERS_PER_PAPER}&select=id,doi,title,publication_year,cited_by_count,referenced_works`);
+    works[n.p.key] = res.results.filter(w => w.title).map(w => ({
+      id: oaId(w.id),
+      title: w.title.replace(/<[^>]+>/g, ''),
+      year: w.publication_year || null,
+      cited: w.cited_by_count ?? null,
+      url: oaLink(w),
+      refs: (w.referenced_works || []).map(oaId).filter(id => ours.has(id)),
+    }));
+  });
+  citers = { sig, at: now, works };
+  try { localStorage.setItem(CITERS_KEY, JSON.stringify(citers)); } catch {}
+}
+
+async function startCiters() {
+  citersState = 'loading';
+  drawSuggestions();
+  try {
+    await loadCiters();
+    citersState = 'done';
+  } catch (err) {
+    citersState = 'error';
+    citersError = err.message;
+  }
+  drawSuggestions();
+}
+
+// ---------- The map ----------
+
+let papers = [], nodes = [], edges = [], listed = new Set(), colors = new Map();
+let tagFilter = '', selectedKey = null, shown = PAGE, phase = 'loading', notes = [];
+let mode = 'foundations'; // which suggestions: papers ours cite, or 'followups' that cite ours
+
+const titleOf = n => n.p.title || n.g.title || shortUrl(n.p.url);
+
+// "SAM 2: Segment Anything in Images and Videos" -> "SAM 2". Long titles are cut at a word.
+// To pick the name, start the title in your list with it: [CLIP: Learning Transferable ...](link)
+function shortTitle(t) {
+  const head = t.split(/:\s/)[0];
+  return head.length <= 24 ? head : head.slice(0, 24).replace(/\s+\S*$/, '') + '…';
+}
+
+// The same name for the map, on up to two short lines.
+function labelLines(t) {
+  const lines = [];
+  for (const word of t.split(/:\s/)[0].split(/\s+/)) {
+    const last = lines.length - 1;
+    if (last >= 0 && (lines[last] + ' ' + word).length <= LABEL_LINE) lines[last] += ' ' + word;
+    else if (lines.length < 2) lines.push(word);
+    else { lines[1] += '…'; break; }
+  }
+  return lines;
+}
+
+const topicOf = p => p.tags.find(t => SHARED_TAGS.includes(t.toLowerCase())) || p.tags.find(isTopic) || '';
+const colorOf = tag => colors.get(tag.toLowerCase()) || 'var(--tag-none)';
+const shows = n => !tagFilter || n.p.tags.some(t => t.toLowerCase() === tagFilter);
+const selected = () => nodes.find(n => n.p.key === selectedKey) || null;
+const tagCounts = () => tally(nodes.flatMap(n => n.p.tags));
+
+// One node per listed paper Semantic Scholar knows, and an edge wherever one cites another.
+function build() {
+  const byId = new Map();
+  nodes = [];
+  for (const p of papers) {
+    const g = graph[p.key]?.d;
+    if (!g || byId.has(g.id)) continue;
+    const n = { p, g, cites: [], citedBy: [], topic: topicOf(p) };
+    n.label = shortTitle(titleOf(n));
+    byId.set(g.id, n);
+    nodes.push(n);
+  }
+  edges = [];
+  for (const n of nodes) for (const r of n.g.refs) {
+    const m = byId.get(r.id);
+    if (!m || m === n || n.cites.includes(m)) continue;
+    n.cites.push(m);
+    m.citedBy.push(n);
+    edges.push({ from: n, to: m });
+  }
+  listed = new Set(byId.keys());
+  colors = tagColors(tagCounts());
+}
+
+// Groups of papers joined by citations, biggest first, then one group of the papers with no links at all.
+function bandsOf() {
+  const parent = new Map(nodes.map(n => [n, n]));
+  const root = n => parent.get(n) === n ? n : root(parent.get(n));
+  for (const e of edges) parent.set(root(e.from), root(e.to));
+  const groups = new Map();
+  for (const n of nodes) {
+    if (!groups.has(root(n))) groups.set(root(n), []);
+    groups.get(root(n)).push(n);
+  }
+  const linked = [...groups.values()].filter(g => g.length > 1).sort((a, b) => b.length - a.length);
+  const loners = [...groups.values()].filter(g => g.length === 1).flat();
+  return { linked, loners };
+}
+
+// Years run left to right. Each group of linked papers gets its own band, so papers with nothing in
+// common never sit among each other's lines. Within a band, a line that skips a year gets a lane in that
+// year's column, ordered like a paper, so it passes between papers instead of through them. Papers start
+// grouped by tag, then a few sweeps move each paper and lane toward what it's linked to, so fewer lines cross.
+function layout(width) {
+  const years = [...new Set(nodes.map(n => n.g.year))].sort((a, b) => (a ?? Infinity) - (b ?? Infinity));
+  const colOf = new Map(years.map((y, i) => [y, i]));
+  const gap = years.length > 1 ? Math.max(MIN_COL, (width - 2 * PAD_X) / (years.length - 1)) : 0;
+  const xOf = i => years.length > 1 ? PAD_X + gap * i : width / 2;
+  const rank = new Map(tagCounts().map((t, i) => [t.key, i]));
+  const byTopic = (a, b) =>
+    (rank.get(a.topic.toLowerCase()) ?? Infinity) - (rank.get(b.topic.toLowerCase()) ?? Infinity) || collator.compare(a.label, b.label);
+  const size = item => item.lane ? LANE : ROW;
+  const join = (a, b) => { a.adj.push(b); b.adj.push(a); };
+  // Where each item's slot is centered, with the column centered on 0.
+  const stack = col => {
+    let y = -col.reduce((sum, item) => sum + size(item), 0) / 2;
+    for (const item of col) { item.y0 = y + size(item) / 2; y += size(item); }
+  };
+
+  const { linked, loners } = bandsOf();
+  const bands = loners.length ? [...linked, loners] : linked;
+  const drawn = [];
+  let top = TOP;
+  for (const members of bands) {
+    const cols = years.map(() => []);
+    for (const n of [...members].sort(byTopic)) {
+      n.col = colOf.get(n.g.year);
+      n.adj = [];
+      cols[n.col].push(n);
+    }
+    const inBand = new Set(members);
+    for (const e of edges) {
+      if (!inBand.has(e.from)) continue;
+      const step = Math.sign(e.to.col - e.from.col);
+      let prev = e.from;
+      e.via = [];
+      for (let c = e.from.col + step; step && c !== e.to.col; c += step) {
+        const lane = { lane: true, col: c, adj: [] };
+        cols[c].push(lane);
+        join(prev, lane);
+        e.via.push(lane);
+        prev = lane;
+      }
+      if (step) join(prev, e.to);
+    }
+
+    cols.forEach(stack);
+    for (let sweep = 0; sweep < 8; sweep++) {
+      for (const col of sweep % 2 ? [...cols].reverse() : cols) {
+        for (const item of col) {
+          item.bary = item.adj.length ? item.adj.reduce((sum, m) => sum + m.y0, 0) / item.adj.length : item.y0;
+        }
+        col.sort((a, b) => a.bary - b.bary);
+        stack(col);
+      }
+    }
+
+    const h = Math.max(...cols.map(col => col.reduce((sum, item) => sum + size(item), 0)));
+    for (const col of cols) for (const item of col) {
+      item.x = xOf(item.col);
+      item.y = top + h / 2 + item.y0 - (item.lane ? 0 : LIFT);
+    }
+    drawn.push({ top, label: members === loners && linked.length ? 'No links to the rest of our list' : '' });
+    top += h + BAND_GAP;
+  }
+
+  return {
+    w: years.length > 1 ? 2 * PAD_X + gap * (years.length - 1) : width,
+    h: top - BAND_GAP + BOTTOM,
+    years: years.map((year, i) => ({ year, x: xOf(i) })),
+    bands: drawn,
+  };
+}
+
+const radius = n => 5 + 2 * Math.log10((n.g.cited ?? 0) + 10);
+
+function svg(tag, attrs = {}) {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  return node;
+}
+
+// A curve from a paper to one it cites, through its lanes in the years between, stopping short of the
+// cited paper so the arrowhead shows.
+function curve(e) {
+  const a = e.from, b = e.to, ra = radius(a), rb = radius(b) + 3;
+  if (a.col === b.col) { // same year: bow out to the left
+    const bow = Math.min(50, 24 + Math.abs(a.y - b.y) / 3);
+    return `M${a.x - ra},${a.y} C${a.x - ra - bow},${a.y} ${b.x - rb - bow},${b.y} ${b.x - rb},${b.y}`;
+  }
+  const dir = Math.sign(a.x - b.x); // 1 when the citing paper is the newer one, as usual
+  const points = [[a.x - dir * ra, a.y], ...e.via.map(lane => [lane.x, lane.y]), [b.x + dir * rb, b.y]];
+  let d = `M${points[0]}`;
+  for (let i = 1; i < points.length; i++) {
+    const [x1, y1] = points[i - 1], [x2, y2] = points[i], mid = (x1 + x2) / 2;
+    d += ` C${mid},${y1} ${mid},${y2} ${x2},${y2}`;
+  }
+  return d;
+}
+
+function drawMap() {
+  const stage = $('stage');
+  if (!nodes.length) {
+    const text = phase === 'loading' ? 'Loading…' : phase === 'error' ? "Couldn't load the map." : 'Nothing to map yet.';
+    stage.replaceChildren(el('p', 'empty', text));
+    return;
+  }
+  const { w, h, years, bands } = layout(stage.clientWidth);
+  const root = svg('svg', { id: 'map', width: w, height: h, role: 'group', 'aria-label': 'Citation map' });
+  const defs = svg('defs');
+  for (const id of ['arrow', 'arrow-on']) {
+    const marker = svg('marker', { id, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto' });
+    marker.append(svg('path', { d: 'M0,1 L9,5 L0,9 z' }));
+    defs.append(marker);
+  }
+  root.append(defs);
+  root.addEventListener('click', e => { if (e.target === root) select(null); });
+
+  for (const y of years) {
+    const label = svg('text', { class: 'year', x: y.x, y: TOP - 22 });
+    label.textContent = y.year ?? 'Year?';
+    root.append(svg('line', { class: 'guide', x1: y.x, x2: y.x, y1: TOP - 12, y2: h - BOTTOM }), label);
+  }
+  for (const band of bands.slice(1)) {
+    const y = band.top - BAND_GAP / 2;
+    root.append(svg('line', { class: 'divider', x1: 0, x2: w, y1: y, y2: y }));
+    if (band.label) {
+      const label = svg('text', { class: 'band', x: 16, y: y + 15 });
+      label.textContent = band.label;
+      root.append(label);
+    }
+  }
+  for (const e of edges) {
+    e.el = svg('path', { class: 'edge', d: curve(e) });
+    e.el.classList.toggle('faded', !(shows(e.from) && shows(e.to)));
+    root.append(e.el);
+  }
+  for (const n of nodes) {
+    const r = radius(n);
+    const g = n.el = svg('g', {
+      class: 'node', transform: `translate(${n.x},${n.y})`, tabindex: 0, role: 'button',
+      'aria-label': titleOf(n) + (n.g.year ? ', ' + n.g.year : ''), 'aria-pressed': n.p.key === selectedKey,
+    });
+    g.style.setProperty('--c', n.topic ? colorOf(n.topic) : 'var(--tag-none)');
+    g.classList.toggle('reviewed', n.p.reviewed);
+    g.classList.toggle('faded', !shows(n));
+    const tip = svg('title'), label = svg('text', { y: r + 14 });
+    tip.textContent = titleOf(n);
+    labelLines(titleOf(n)).forEach((line, i) => {
+      const span = svg('tspan', { x: 0, dy: i ? 14 : 0 });
+      span.textContent = line;
+      label.append(span);
+    });
+    g.append(tip, svg('circle', { class: 'ring', r: r + 4 }), svg('circle', { class: 'dot', r }), label);
+    g.addEventListener('mouseenter', () => focusOn(n));
+    g.addEventListener('focus', () => focusOn(n));
+    g.addEventListener('mouseleave', rest);
+    g.addEventListener('blur', rest);
+    g.addEventListener('click', () => select(n));
+    g.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(n); }
+    });
+    root.append(g);
+  }
+  stage.replaceChildren(root);
+  rest();
+
+  // On a narrow screen the map scrolls sideways, so start at the selected paper or the middle of the papers.
+  if (w > stage.clientWidth && !stage.dataset.placed) {
+    const xs = nodes.map(n => n.x).sort((a, b) => a - b);
+    stage.scrollLeft = (selected()?.x ?? xs[xs.length >> 1]) - stage.clientWidth / 2;
+    stage.dataset.placed = 'true';
+  }
+}
+
+// Bring some papers (and lines) forward and fade the rest.
+function light(ns, es) {
+  $('map')?.classList.toggle('focusing', ns.length > 0);
+  for (const n of nodes) n.el?.classList.toggle('on', ns.includes(n));
+  for (const e of edges) e.el?.classList.toggle('on', es.includes(e));
+}
+const focusOn = n => light([n, ...n.cites, ...n.citedBy], edges.filter(e => e.from === n || e.to === n));
+const rest = () => { const n = selected(); n ? focusOn(n) : light([], []); };
+
+// Clicking the selected paper again unselects it. `scroll` brings it into view on the map.
+function select(n, { toggle = true, scroll = false } = {}) {
+  selectedKey = n && !(toggle && n.p.key === selectedKey) ? n.p.key : null;
+  for (const m of nodes) m.el?.setAttribute('aria-pressed', m.p.key === selectedKey);
+  rest();
+  drawDetail();
+  writeHash();
+  if (scroll && n?.el) {
+    const stage = $('stage');
+    stage.scrollTo({ left: n.x - stage.clientWidth / 2, behavior: 'smooth' });
+    if (scroll === 'page') stage.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+}
+
+// ---------- The selected paper and suggestions ----------
+
+// Paper names that select the paper on the map.
+function names(list, scroll, max = Infinity) {
+  const frag = document.createDocumentFragment();
+  list.slice(0, max).forEach((m, i) => frag.append(i ? ', ' : '', button('link', m.label, () => select(m, { toggle: false, scroll }))));
+  if (list.length > max) frag.append(` +${list.length - max}`);
+  return frag;
+}
+
+// The line to paste into a list file, tagged like the papers that led to it.
+function copyLine(d, tag) {
+  const text = `- [${d.title.replace(/[[\]]/g, '')}](${d.url})${tag ? ' #' + tag : ''}`;
+  const b = button('act', 'Copy line', async () => {
+    try { await navigator.clipboard.writeText(text); b.textContent = 'Copied'; }
+    catch { b.textContent = "Couldn't copy"; }
+    setTimeout(() => { b.textContent = 'Copy line'; }, 1500);
+  });
+  b.title = text;
+  return b;
+}
+
+// A paper nobody has listed, as a card: its year, the title, its citations. `by` are our papers that
+// cite it, or with `followUp`, our papers it cites.
+function paperCard(d, tag, by, followUp = false) {
+  const li = el('li', 'card');
+  const face = link(d.url, null, 'card-face');
+  const top = el('span', 'card-top');
+  top.append(el('span', null, d.year ? String(d.year) : ''));
+  if (by?.length > 1) top.append(el('span', 'badge soft', `${followUp ? 'Cites' : 'Cited by'} ${by.length} of ours`));
+  const bottom = el('span', 'card-bottom');
+  bottom.append(el('span', null, d.cited != null ? `${fmt(d.cited)} citation${d.cited === 1 ? '' : 's'}` : ''), icon('out'));
+  face.append(top, el('span', 'card-title', d.title), bottom);
+
+  const caption = el('div', 'caption');
+  const from = el('span', 'caption-by');
+  if (by) {
+    from.append(by.length > 1 ? '' : followUp ? 'Cites ' : 'Cited by ');
+    from.append(names(by, 'page', 2));
+  }
+  caption.append(from, copyLine(d, tag));
+  li.append(face, caption);
+  return li;
+}
+
+function drawDetail() {
+  const box = $('detail'), n = selected();
+  box.hidden = !n;
+  if (!n) return box.replaceChildren();
+
+  const head = el('div', 'sheet-head');
+  const facts = [n.g.year, n.g.cited != null ? `${fmt(n.g.cited)} citations` : null, n.p.reviewed ? 'Reviewed' : 'To read'];
+  const close = button('close', null, () => select(null));
+  close.setAttribute('aria-label', 'Unselect');
+  close.append(icon('close'));
+  head.append(el('span', null, facts.filter(Boolean).join(' · ')), close);
+
+  const title = el('h2', 'sheet-title');
+  title.id = 'detail-h';
+  title.append(link(n.p.url, titleOf(n)));
+  const who = el('p', 'sheet-authors', 'Listed by ' + n.p.people.map(w => w.name).join(', '));
+  if (n.p.tags.length) who.append(' · ' + n.p.tags.map(t => '#' + t).join(' '));
+  const items = [head, title, who];
+
+  for (const [label, list] of [['Cites ', n.cites], ['Cited by ', n.citedBy]]) {
+    if (!list.length) continue;
+    const line = el('p', 'links', label);
+    line.append(names(list, 'x'));
+    items.push(line);
+  }
+  if (!n.cites.length && !n.citedBy.length) items.push(el('p', 'links', "Doesn't cite, and isn't cited by, anything else on our list."));
+
+  const actions = el('div', 'actions');
+  const rel = related.get(n.g.id);
+  if (!rel || rel.state === 'error') actions.append(button('pill solid', rel ? 'Try again' : 'Find papers like this one', () => findRelated(n)));
+  const inQueue = el('a', 'pill outline', 'Open in the queue');
+  inQueue.href = './#paper=' + encodeURIComponent(n.p.key);
+  actions.append(inQueue);
+  items.push(actions);
+
+  if (rel?.state === 'loading') {
+    items.push(el('h2', null, 'Papers like this one'), el('p', 'empty', 'Asking Semantic Scholar…'));
+  } else if (rel?.state === 'error') {
+    items.push(el('p', 'note', `Couldn't get papers like this one. ${rel.error}`));
+  } else if (rel) {
+    const fresh = rel.papers.filter(d => !listed.has(d.id)).slice(0, 8); // two full rows of four
+    const heading = el('h2', null, 'Papers like this one');
+    heading.append(el('span', 'n', 'from Semantic Scholar'));
+    const grid = el('ol', 'grid');
+    grid.append(...fresh.map(d => paperCard(d, n.topic)));
+    items.push(heading, fresh.length ? grid : el('p', 'empty', 'Everything it found is already on our list.'));
+  }
+  box.replaceChildren(...items);
+}
+
+// Suggestions start from our papers (or the ones with the chosen tag). Foundations are papers they cite;
+// follow-ups are papers that cite them. Nobody has listed either kind yet. With two or more of ours to go on,
+// a suggestion has to be linked to at least two of them. Foundations that more of ours cite rank higher.
+// Follow-ups rank by their own citations instead, since surveys cite everything and would come first.
+function suggestions() {
+  const from = nodes.filter(shows);
+  const found = new Map();
+  const add = (key, d, ns) => {
+    let s = found.get(key);
+    if (!s) found.set(key, s = { ...d, by: [] });
+    else if ((d.cited ?? 0) > (s.cited ?? 0)) Object.assign(s, d, { by: s.by }); // the better known record
+    for (const n of ns) if (shows(n) && !s.by.includes(n)) s.by.push(n);
+  };
+
+  if (mode === 'followups') {
+    if (!citers) return { from, list: [] };
+    const owner = new Map(nodes.flatMap(n => (oaIds[n.p.key]?.ids || []).map(id => [id, n])));
+    const ours = new Set(nodes.map(n => norm(n.g.title || titleOf(n))));
+    for (const n of from) for (const w of citers.works[n.p.key] || []) {
+      // One paper can have a preprint and a published record, so match them up by title.
+      if (owner.has(w.id) || ours.has(norm(w.title))) continue;
+      add(norm(w.title), w, [n, ...w.refs.map(id => owner.get(id)).filter(Boolean)]);
+    }
+  } else {
+    for (const n of from) for (const r of n.g.refs) if (!listed.has(r.id)) add(r.id, r, [n]);
+  }
+
+  const min = from.length > 1 ? 2 : 1;
+  const byCitations = (a, b) => (b.cited ?? 0) - (a.cited ?? 0);
+  const list = [...found.values()].filter(s => s.by.length >= min)
+    .sort(mode === 'followups' ? byCitations : (a, b) => b.by.length - a.by.length || byCitations(a, b));
+  return { from, list };
+}
+
+// The tag most of these papers share.
+function commonTopic(ns) {
+  const counts = new Map();
+  for (const n of ns) if (n.topic) counts.set(n.topic, (counts.get(n.topic) || 0) + 1);
+  return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+}
+
+function drawSuggestions() {
+  for (const b of document.querySelectorAll('[data-mode]')) b.setAttribute('aria-pressed', b.dataset.mode === mode);
+  const followUps = mode === 'followups';
+  if (followUps && citersState === 'idle' && phase === 'done') return startCiters();
+
+  const { from, list } = suggestions();
+  const tag = tagFilter && (tagCounts().find(t => t.key === tagFilter)?.name || tagFilter);
+  const ours = `our${tag ? ' #' + tag : ''} papers`;
+  const note = $('sugg-note');
+  if (followUps && citersState === 'loading') note.textContent = 'Asking OpenAlex which well-known papers cite ours…';
+  else if (followUps && citersState === 'error') {
+    note.textContent = `Couldn't reach OpenAlex. ${citersError} `;
+    note.append(button('act', 'Try again', startCiters));
+  } else if (from.length === 1) {
+    note.textContent = followUps
+      ? `The most cited papers that cite ${from[0].label}, from OpenAlex.`
+      : `Papers ${from[0].label} cites that nobody has listed yet, most cited first.`;
+  } else if (from.length) {
+    note.textContent = followUps
+      ? `Newer papers that cite at least two of ${ours}, most cited first. Citations come from OpenAlex.`
+      : `Older papers cited by at least two of ${ours}. The more of ours cite one, the higher it ranks.`;
+  } else note.textContent = phase === 'loading' ? '' : 'Nothing to suggest yet.';
+  $('sugg-count').textContent = list.length || '';
+
+  $('sugg').replaceChildren(...list.slice(0, shown).map(s => {
+    const li = paperCard(s, tag || commonTopic(s.by), s.by, followUps);
+    li.addEventListener('mouseenter', () => light(s.by, []));
+    li.addEventListener('mouseleave', rest);
+    return li;
+  }));
+  $('more').hidden = list.length <= shown;
+}
+
+function drawSidebar() {
+  const pickTag = q => { tagFilter = tagFilter === q ? '' : q; shown = PAGE; update(); };
+  sideGroup($('tag-group'), 'Tags', [
+    { q: '', label: 'All papers', n: nodes.length },
+    ...tagCounts().map(t => ({ q: t.key, label: t.name, n: t.n, color: isTopic(t.name) ? colorOf(t.name) : null })),
+  ], pickTag, tagFilter);
+}
+
+function drawNotice() {
+  const missing = papers.filter(p => !s2Id(p) || (graph[p.key] && !graph[p.key].d));
+  const lines = [...notes];
+  if (missing.length) {
+    lines.push(`Not on the map because Semantic Scholar doesn't know ${missing.length === 1 ? 'it' : 'them'}: ${missing.map(p => p.title || shortUrl(p.url)).join(', ')}.`);
+  }
+  $('notice').replaceChildren(...lines.map(t => el('p', null, t)));
+  $('notice').hidden = lines.length === 0;
+  $('summary').textContent = nodes.length
+    ? `${nodes.length} papers · ${edges.length} citation${edges.length === 1 ? '' : 's'} between them`
+    : '';
+}
+
+// The chosen tag, paper and kind of suggestion live in the URL (#tag=ssl&paper=arxiv:2103.00020&suggest=followups),
+// so a view can be shared.
+function readHash() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  tagFilter = (h.get('tag') || '').replace(/^#/, '').toLowerCase();
+  selectedKey = h.get('paper');
+  mode = h.get('suggest') === 'followups' ? 'followups' : 'foundations';
+}
+
+function writeHash() {
+  const h = new URLSearchParams();
+  if (tagFilter) h.set('tag', tagFilter);
+  if (selectedKey) h.set('paper', selectedKey);
+  if (mode === 'followups') h.set('suggest', mode);
+  const hash = h.toString() ? '#' + h : '';
+  if (hash !== location.hash) history.replaceState(null, '', hash || location.pathname + location.search);
+}
+
+function update() {
+  build();
+  drawSidebar();
+  drawMap();
+  drawDetail();
+  drawSuggestions();
+  drawNotice();
+  // Keep a paper named in the URL until the map has loaded enough to know whether it's there.
+  if (phase !== 'loading' || selected()) writeHash();
+}
+
+// ---------- Start ----------
+
+for (const a of document.querySelectorAll('.add, .source')) a.href = `https://github.com/${REPO}/tree/${BRANCH}/${REPO_DIR}`;
+for (const a of document.querySelectorAll('.repo')) a.href = `https://github.com/${REPO}`;
+$('more').addEventListener('click', () => { shown += PAGE; drawSuggestions(); });
+for (const b of document.querySelectorAll('[data-mode]')) {
+  b.addEventListener('click', () => { mode = b.dataset.mode; shown = PAGE; drawSuggestions(); writeHash(); });
+}
+window.addEventListener('hashchange', () => { readHash(); shown = PAGE; update(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && selectedKey) select(null); });
+
+let stageWidth = 0;
+new ResizeObserver(() => {
+  const w = $('stage').clientWidth;
+  if (w !== stageWidth) { stageWidth = w; if (nodes.length) drawMap(); }
+}).observe($('stage'));
+
+readHash();
+
+async function start() {
+  // Draw what this browser saw last time right away, then refresh it.
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(CACHE_KEY)); } catch {}
+  if (saved && Array.isArray(saved.files)) { papers = collect(saved.files).papers; update(); }
+
+  try {
+    const files = await loadFiles();
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ files })); } catch {}
+    papers = collect(files).papers;
+  } catch (err) {
+    if (!papers.length) {
+      phase = 'error';
+      notes = [`Couldn't load the lists. ${err.message}`];
+      return update();
+    }
+    notes = [`Showing the last copy this browser loaded. ${err.message}`];
+  }
+  update();
+
+  try {
+    await loadGraph(papers);
+    phase = 'done';
+  } catch (err) {
+    phase = 'error';
+    notes.push(`Couldn't reach Semantic Scholar, so the map may be missing papers. ${err.message}`);
+  }
+  update();
+}
+
+start();
+</script>
+</body>
+</html>
