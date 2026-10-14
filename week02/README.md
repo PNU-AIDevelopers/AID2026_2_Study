@@ -33,6 +33,7 @@ U-Net, DDPM, CLIP Variants에 관해 각자 읽은 내용을 발표함.
 - [CLIP(s).pdf](./notes/CLIP(s).pdf)
 - [DDPM.pdf](./notes/DDPM.pdf)
 - [ReAct.pdf](./notes/ReAct.pdf)
+- [ddmp_study.md](./notes/ddpm_study.md)
 
 ---
 
