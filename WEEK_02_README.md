@@ -60,4 +60,5 @@
 2. 모델 학습   Fine-tuning   Transformer 모델 선정 및 학습
 3. 모델 평가   Evaluation & Analysis   성능 측정, 오류 분석, 모델 개선 방향 도출
 4. 서비스   Inference & Deployment   학습된 모델을 이용한 신호등 웹서비스 구현
+   
 1,2,3,4 역할 분배를 완료하고 각자 파트에 맞는 공부 계획 수립한다.
