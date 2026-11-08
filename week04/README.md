@@ -42,8 +42,8 @@
 - `AID_DL_Chapter(5.4, 5.5).pdf`
 - `AID_DL_Chapter(5.6, 5.7).pdf`
 - `AID_DL_Chapter(6.1).html(html파일)`
-- `Chapter5_code1.jpynb`
-- `Chapter5_code2.jpynb`
+- `Chapter5_code1.ipynb`
+- `Chapter5_code2.ipynb`
 
 
 
