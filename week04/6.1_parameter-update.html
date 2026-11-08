@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>매개변수 갱신 — SGD에서 Adam까지</title>
+<style>
+:root{--paper:#f5f3ed;--ink:#152c3d;--muted:#687780;--line:#d6dad5;--orange:#e76c36;--teal:#177e81;--blue:#496a8b;--sgd:#e76c36;--mom:#496a8b;--ada:#177e81;--adam:#8a5a8c;--sans:"Pretendard","Noto Sans KR","Malgun Gothic","Segoe UI",sans-serif;--mono:"Cascadia Code","Consolas",monospace}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}body{background:#d9ddd9;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}button,input{font:inherit}button{cursor:pointer}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--orange);outline-offset:5px}button:disabled{opacity:.35;cursor:default}
+#viewport{height:calc(100vh - 54px);display:flex;align-items:center;justify-content:center;overflow:hidden}#frame{position:relative;flex:none}#deck{width:1600px;height:900px;transform-origin:top left;position:relative;background:var(--paper)}
+.slide{position:absolute;inset:0;padding:58px 76px 54px;display:none;overflow:hidden;background:var(--paper)}.slide.active{display:block}.slide.dark{background:var(--ink);color:var(--paper)}
+.eyebrow{font-size:16px;font-weight:700;letter-spacing:2.4px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;color:var(--muted)}.dark .eyebrow{color:#a5b7bf}
+.slide h1,.slide h2,.slide h3,.slide p{margin:0}.slide h2{font-size:51px;letter-spacing:-2px;line-height:1.32;font-weight:750;margin-top:25px}.subtitle{font-size:22px;line-height:1.6;color:var(--muted);margin-top:12px!important}
+.footer{position:absolute;bottom:28px;left:76px;right:76px;display:flex;justify-content:space-between;font-size:14px;letter-spacing:.3px;color:var(--muted)}.dark .footer{color:#a5b7bf}.footer:before{content:"";height:1px;background:var(--line);position:absolute;top:-14px;left:0;right:0}.dark .footer:before{background:#3c5260}.page{font-family:var(--mono);font-size:15px}
+.accent{color:var(--orange)}.teal{color:var(--teal)}.muted{color:var(--muted)}
+.math{font-family:"Cambria Math","Cambria","Times New Roman",serif;font-style:italic;letter-spacing:0;white-space:nowrap}.math b{font-style:normal;font-weight:700}.math sub{font-size:.57em;font-style:normal}.math sup{font-size:.6em}.math .up,.math .op{font-style:normal}
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 .12em;font-size:.82em}.frac>span:first-child{border-bottom:2px solid currentColor;padding:0 .12em .06em}.frac>span:last-child{padding-top:.06em}
+.equation{font-size:43px;line-height:1.45}.fine{font-size:17px;line-height:1.7;color:var(--muted)}.rule{height:1px;background:var(--line);margin:22px 0}
+.plot{position:relative}.plot svg{display:block;width:100%;height:100%;overflow:visible}
+.small-btn{border:1px solid #bbc5c4;background:transparent;color:var(--ink);padding:9px 15px;border-radius:4px;font-size:16px;font-weight:600}.small-btn:hover{background:#e8ebe5}.small-btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}.small-btn.primary:hover{background:#29485b}.small-btn.on{background:#e8ebe5;border-color:var(--ink)}
+.step-readout{font-family:var(--mono);color:var(--muted);font-size:17px;white-space:nowrap}
+.controls{position:absolute;bottom:96px;left:76px;display:flex;gap:16px;align-items:center}.controls input[type=range]{accent-color:var(--orange);width:250px}.control{display:flex;gap:10px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:9px;font-weight:700;white-space:nowrap}.chip i{display:inline-block;width:13px;height:13px;border-radius:50%;background:currentColor}
+.c-sgd{color:var(--sgd)}.c-mom{color:var(--mom)}.c-ada{color:var(--ada)}.c-adam{color:var(--adam)}
+.term{border-left:3px solid var(--orange);padding:4px 0 4px 16px;font-size:19px;line-height:1.65;color:var(--muted)}.term strong{color:var(--ink);font-size:20px}
+.code-panel{background:#172c3b;color:#dfe7e9;padding:22px 24px 20px 20px;border-radius:6px}.code-label{color:#91a5b1;font:14px var(--mono);letter-spacing:1px;display:flex;justify-content:space-between;margin-bottom:12px}
+.code-lines{font:18px/1.58 var(--mono);white-space:pre}.code-line{display:block;margin:0 -24px 0 -20px;padding:0 20px;position:relative;transition:background .2s}.code-line .ln{display:inline-block;width:34px;font-size:14px;color:#657f90;user-select:none}.code-line.focus{background:#30434b}.code-line.focus:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--orange)}.kw{color:#83c6ca}.fn{color:#e6b879}.str{color:#b7d4a9}.cm{color:#7d93a0}.swap{color:#f3b08f;font-weight:700}
+.mini-code{background:#172c3b;color:#dfe7e9;border-radius:6px;padding:16px 20px;font:18px/1.75 var(--mono);white-space:pre}.mini-code .cap{display:block;font-size:13px;letter-spacing:1px;color:#91a5b1;margin-bottom:6px}
+.legend{display:flex;gap:22px;font-size:17px;color:var(--muted);align-items:center}.legend span{display:flex;gap:8px;align-items:center}.legend i{display:inline-block;width:24px;height:3px}.legend i.dash{background:repeating-linear-gradient(90deg,#a9b4b2 0 6px,transparent 6px 11px)!important}
+
+/* 01 cover */
+.cover h1{font-size:104px;line-height:1.12;letter-spacing:-6px;margin:92px 0 22px;font-weight:800;position:relative;z-index:1}
+.cover-question{font-size:31px;line-height:1.6;letter-spacing:-1.2px;width:600px;position:relative;z-index:1}
+.cover-definition{width:560px;font-size:21px;line-height:1.75;color:var(--muted);margin-top:26px!important;position:relative;z-index:1}
+.cover-plot{position:absolute;right:30px;top:150px;width:905px;height:600px}
+.cover-chips{position:absolute;left:76px;bottom:118px;display:flex;gap:26px;font-size:21px}
+.cover-chips .chip{gap:10px}
+.cover-index{position:absolute;right:84px;bottom:96px;color:#dfe3dc;font:120px/1 var(--mono);letter-spacing:-10px;z-index:0}
+
+/* 02 adventurer */
+.idea-row{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;margin-top:30px}.idea-row>div{border-top:2px solid var(--ink);padding-top:16px}.idea-row>div:last-child{border-color:var(--orange)}.idea-no{font:16px var(--mono);color:var(--muted)}.idea-row strong{display:block;font-size:25px;margin:6px 0 8px;letter-spacing:-.5px}.idea-row p{font-size:19px;line-height:1.6;color:var(--muted)}
+.terrain{position:absolute;left:76px;right:76px;top:452px;height:330px}
+.terrain-controls{position:absolute;right:76px;top:432px;display:flex;gap:10px;align-items:center;z-index:2}
+
+/* 03 sgd */
+.sgd-layout{display:grid;grid-template-columns:640px 1fr;gap:56px;margin-top:24px}
+.big-eq{font-size:62px;line-height:1.3}
+.eq-parts{margin-top:22px;display:grid;gap:12px}.eq-part{display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:baseline;border-top:1px solid var(--line);padding-top:12px;font-size:20px;line-height:1.55;color:var(--muted)}.eq-part .math{font-size:30px;color:var(--ink)}.eq-part strong{color:var(--ink)}
+.swap-box{margin-top:26px}.swap-title{font-size:19px;font-weight:700;margin-bottom:12px}.swap-chips{display:flex;gap:10px}.swap-chips button{border:1.5px solid currentColor;background:transparent;border-radius:30px;padding:8px 16px;font-size:17px;font-weight:700}.swap-chips button.sel{background:currentColor}.swap-chips button.sel span{color:var(--paper)}
+.code-next{position:absolute;right:76px;bottom:96px}.code-stage-text{position:absolute;left:772px;bottom:100px;font-size:20px;color:var(--muted);width:520px}.code-stage-text strong{color:var(--orange)}
+
+/* field slides */
+.field-layout{display:grid;grid-template-columns:900px 1fr;gap:46px;margin-top:10px}.field{height:500px}
+.side-copy{padding-top:8px}.side-copy .equation{font-size:32px}
+.axis-row{border-top:1px solid var(--line);padding:13px 0}.axis-row strong{font-size:23px;display:block;margin-bottom:4px}.axis-row .math{font-size:27px}.axis-row p{font-size:19px;line-height:1.55;color:var(--muted);margin-top:4px!important}
+.series{height:118px;margin-top:2px}
+.claim{position:absolute;right:76px;bottom:102px;font-size:22px;font-weight:650;text-align:right;line-height:1.5}
+
+/* 04 anisotropy */
+.read-grid{display:grid;grid-template-columns:170px 1fr;row-gap:10px;font-size:21px;margin-top:16px;align-items:baseline}.read-grid>span:nth-child(odd){color:var(--muted);font-size:18px}.read-grid .math{font-size:25px}
+.angle-big{font:64px/1 var(--mono);letter-spacing:-2px;color:var(--orange);margin-top:10px}
+.preset{display:flex;gap:8px;margin-top:6px}
+
+/* 06 momentum concept */
+.mom-layout{display:grid;grid-template-columns:640px 1fr;gap:56px;margin-top:22px}
+.eq-stack .equation{font-size:44px;line-height:1.5}.eq-tag{font:15px var(--mono);color:var(--muted);margin-left:14px;font-style:normal}
+.anno{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:14px}.anno>div{border-top:3px solid var(--mom);padding-top:10px;font-size:18px;line-height:1.55;color:var(--muted)}.anno>div.force{border-color:var(--sgd)}.anno strong{display:block;color:var(--ink);font-size:21px;margin-bottom:3px}
+.bowl{height:176px;margin-top:8px}
+.eqc-row{display:grid;grid-template-columns:92px 1fr;align-items:center;gap:6px;padding:6px 0;border-top:1px solid var(--line)}.eqc-row:first-child{border-top:0}.eqc-row .lbl{font-weight:700;font-size:20px}.eqc-row .lbl small{display:block;font:500 14px var(--sans);color:var(--muted)}.eqc-row .math{font-size:35px;line-height:1.45}.eqc-row.base .math{font-size:29px;color:var(--muted)}
+.new{background:#dfe7ef;border-radius:6px;padding:0 6px;color:var(--mom)}.newv{border-bottom:3px solid var(--mom)}
+.diff{display:grid;gap:7px;margin-top:8px}.diff div{display:grid;grid-template-columns:30px 1fr;font-size:18px;line-height:1.5;color:var(--muted)}.diff b{color:var(--ink)}.diff .n{font:700 16px var(--mono);color:var(--mom);padding-top:2px}
+.bar-title{display:flex;justify-content:space-between;align-items:baseline;font-size:20px;font-weight:700}.bar-title span{font-size:17px;font-weight:500;color:var(--muted)}.vbar{height:205px;margin-bottom:12px}
+
+/* 07 */
+.stat-pair{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:6px}.stat{border-top:3px solid currentColor;padding-top:10px}.stat .num{font:56px/1.1 var(--mono);letter-spacing:-2px}.stat p{font-size:17px;color:var(--muted);margin-top:2px!important}
+.why{margin-top:22px}.why>div{display:grid;grid-template-columns:60px 1fr;gap:12px;border-top:1px solid var(--line);padding:12px 0;font-size:19px;line-height:1.55;color:var(--muted)}.why b{color:var(--ink);font:600 20px var(--sans)}
+
+/* 08 adagrad concept */
+.ada-layout{display:grid;grid-template-columns:660px 1fr;gap:52px;margin-top:20px}
+.decay-cards{display:grid;grid-template-columns:1fr 1fr;gap:18px}.decay-cards>div{border:1px solid var(--line);border-radius:6px;padding:14px 16px;background:#f9f8f4}.decay-cards strong{font-size:20px}.decay-cards p{font-size:16px;color:var(--muted);line-height:1.5;margin-top:4px!important}.decay-cards svg{display:block;width:100%;height:70px;margin-top:6px}
+.ada-eq{margin-top:20px}.ada-eq .equation{font-size:40px;line-height:1.55}
+.ada-anno{display:grid;gap:8px;margin-top:10px;font-size:18px;line-height:1.5;color:var(--muted)}.ada-anno b{color:var(--ink)}
+.gauge-row{display:grid;grid-template-columns:120px 1fr 120px;gap:14px;align-items:center;margin-top:12px;font-size:19px}.gauge{height:18px;background:#e6e8e2;border-radius:9px;overflow:hidden}.gauge i{display:block;height:100%;border-radius:9px;transition:width .2s}.gauge-val{font:20px var(--mono);text-align:right}
+.eff{height:300px;margin-top:10px}
+
+/* 09 */
+.first-step{border:1px solid var(--line);border-radius:6px;padding:16px 18px;background:#f9f8f4;margin-top:8px}.first-step .math{font-size:27px;line-height:1.6}.first-step p{font-size:17px;color:var(--muted);line-height:1.55}
+.rms{font-size:17px;line-height:1.6;color:var(--muted);margin-top:16px!important;border-left:3px solid var(--ada);padding-left:14px}
+
+/* 10 adam */
+.adam-layout{display:grid;grid-template-columns:600px 1fr;gap:46px;margin-top:18px}
+.merge{display:grid;grid-template-columns:1fr 44px 1fr;align-items:stretch}.merge .plus{display:flex;align-items:center;justify-content:center;font-size:36px;color:var(--muted)}
+.mcard{border-top:4px solid currentColor;background:#f9f8f4;padding:12px 14px;border-radius:0 0 6px 6px}.mcard strong{font-size:22px;display:block}.mcard p{color:var(--muted);font-size:16px;line-height:1.5;margin-top:4px!important}
+.merge-arrow{text-align:center;color:var(--muted);font-size:26px;line-height:1;margin:8px 0}
+.adam-card{border:2px solid var(--adam);border-radius:6px;padding:14px 18px}.adam-card strong{font-size:26px;color:var(--adam)}.adam-card p{font-size:17px;color:var(--muted);line-height:1.55;margin-top:4px!important}
+.hp{margin-top:16px}.hp-row{display:grid;grid-template-columns:86px 86px 1fr;gap:10px;border-top:1px solid var(--line);padding:9px 0;align-items:baseline;font-size:17px;color:var(--muted)}.hp-row .math{font-size:23px;color:var(--ink)}.hp-row b{font:600 19px var(--mono);color:var(--adam)}
+.adam-field{height:470px}
+
+/* 11 compare */
+.cmp-layout{display:grid;grid-template-columns:960px 1fr;gap:44px;margin-top:14px}.quad{display:grid;grid-template-columns:1fr 1fr;gap:12px 24px}
+.qhead{display:flex;justify-content:space-between;align-items:baseline;font-size:20px}.qhead .math{font-size:19px;color:var(--muted)}.qhead .lossv{font:16px var(--mono);color:var(--muted)}.qplot{height:206px}
+.cmp-loss{height:260px}.caution{margin-top:14px}.caution>div{border-top:1px solid var(--line);padding:10px 0;font-size:18px;line-height:1.5;color:var(--muted)}.caution b{color:var(--ink)}.caution .lrs{font:17px var(--mono)}
+
+/* 12 mnist */
+.mnist-layout{display:grid;grid-template-columns:960px 1fr;gap:50px;margin-top:14px}.mnist-chart{height:500px}
+.rank{margin-top:6px}.rank-row{display:grid;grid-template-columns:120px 1fr 74px;gap:12px;align-items:center;margin:12px 0;font-size:19px;font-weight:700}.rank-row .bar{height:22px;border-radius:3px}.rank-row .v{font:18px var(--mono);text-align:right;color:var(--ink)}
+.setup{margin-top:20px}.setup>div{border-top:1px solid var(--line);padding:10px 0;font-size:18px;line-height:1.5;color:var(--muted)}.setup b{color:var(--ink)}
+
+/* momentum unrolled */
+.momx-layout{display:grid;grid-template-columns:700px 1fr;gap:64px;margin-top:22px}
+.vt{width:100%;border-collapse:collapse;font:20px var(--mono)}.vt th{font:600 16px var(--sans);color:var(--muted);text-align:right;padding:8px 12px;border-bottom:2px solid var(--ink);white-space:nowrap}.vt td{text-align:right;padding:9px 12px;border-bottom:1px solid var(--line)}.vt td:first-child,.vt th:first-child{text-align:center;color:var(--muted)}
+.vt tr.over td{background:#fbe6da}.vt .pos{color:var(--orange);font-weight:700}.vt .vcol{color:var(--mom);font-weight:700}.vt .neg-y{color:var(--orange);font-weight:700}
+.vt-notes{margin-top:16px;display:grid;gap:10px}.vt-notes div{display:grid;grid-template-columns:86px 1fr;gap:10px;font-size:18px;line-height:1.5;color:var(--muted)}.vt-notes b{color:var(--ink)}.vt-notes .tag{font:600 15px var(--sans);border-radius:4px;padding:2px 8px;text-align:center;align-self:start}.tag.t1{background:#fbe6da;color:#b3501f}.tag.t2{background:#e6ecf2;color:var(--mom)}
+.unroll .equation{font-size:33px;line-height:1.5}.w-plot{height:150px;margin-top:4px}.case-plot{height:196px;margin-top:6px}
+/* flip */
+.flip-layout{display:grid;grid-template-columns:1fr 1fr;gap:64px;margin-top:20px}.flip-plot{height:440px}.flip-legend{display:flex;gap:28px;font-size:18px;margin-top:4px}.flip-legend .v{font:17px var(--mono);color:var(--muted);margin-left:6px}
+.flip-claim{position:absolute;left:76px;right:76px;bottom:94px;border-top:1px solid var(--line);padding-top:16px;font-size:22px;font-weight:650;line-height:1.55}.flip-claim span{color:var(--muted);font-weight:500;font-size:19px}
+
+/* 13 closing */
+.closing h2{font-size:56px;letter-spacing:-2.5px;margin-top:40px;line-height:1.25}
+.recap{width:680px;margin-top:34px;position:relative;z-index:1}.recap-row{display:grid;grid-template-columns:150px 1fr;gap:18px;border-top:1px solid #3d5361;padding:20px 0;align-items:baseline}.recap-row .chip{font-size:23px}.recap-row p{font-size:19px;line-height:1.55;color:#afc1c7}.recap-row p b{color:#f5f3ed;font-weight:600}
+.closing-plot{position:absolute;right:40px;top:200px;width:780px;height:470px}
+.closing-question{position:absolute;bottom:100px;left:76px;font-size:25px;line-height:1.6;color:#d1dcde;max-width:1400px}
+.dark .c-sgd{color:#f08a5d}.dark .c-mom{color:#8fb0d1}.dark .c-ada{color:#4cbcb7}.dark .c-adam{color:#c49bd0}
+
+/* presentation shell */
+#toolbar{height:54px;background:#102330;display:flex;align-items:center;justify-content:space-between;padding:0 22px;color:#cbd7dc;font-size:13px;gap:15px}#toolbar button{border:0;background:transparent;color:inherit;font-size:13px;padding:8px 11px;border-radius:3px}#toolbar button:hover{background:#29404f;color:white}.toolbar-group{display:flex;gap:4px;align-items:center}.toolbar-sep{height:18px;width:1px;background:#3b4b57;margin:0 8px}#toolbar .nav-btn{font-size:19px;padding:3px 13px}#position{font:13px var(--mono);min-width:62px;text-align:center}.toolbar-hint{color:#8fa5af}
+.progress{position:fixed;bottom:54px;left:0;height:3px;background:var(--orange);width:10%;transition:width .22s;z-index:10}
+.overlay{position:fixed;inset:0;background:#102330ab;z-index:50;display:none;align-items:center;justify-content:center;padding:30px}.overlay.open{display:flex}.modal{background:var(--paper);width:min(1020px,94vw);max-height:86vh;overflow:auto;padding:34px 40px 40px;border-radius:6px}.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}.modal-header h2{font-size:25px;margin:0}.modal-header button{border:0;background:transparent;font-size:27px;color:var(--ink);padding:4px 10px}
+#toc-list{display:grid;grid-template-columns:1fr 1fr;gap:0 32px}#toc-list button{display:flex;gap:20px;align-items:center;text-align:left;border:0;border-top:1px solid var(--line);padding:20px 0;background:transparent;font-size:17px;color:var(--ink)}#toc-list button:hover{color:var(--orange)}#toc-list .num{color:var(--muted);font:18px var(--mono)}
+#notes-text{font-size:18px;line-height:1.9;color:#314956}#notes-text p{margin:0 0 16px}#notes-text .timing{color:var(--orange);font-weight:600}.notes{display:none}
+body.presenting #viewport{height:100vh}body.presenting #toolbar{display:none}body.presenting .progress{bottom:0}#exit-present{display:none;position:fixed;right:15px;top:15px;z-index:30;border:1px solid #9eada8;background:var(--paper);color:var(--ink);padding:7px 12px;font-size:12px;opacity:.25;border-radius:3px}body.presenting #exit-present{display:block}#exit-present:hover,#exit-present:focus-visible{opacity:1}
+@media(max-width:700px){.toolbar-hint{display:none}#toolbar{padding:0 8px}#toolbar button{padding:8px}.modal{padding:22px}#toc-list{grid-template-columns:1fr}.toolbar-sep{margin:0 3px}}
+@media print{@page{size:1600px 900px;margin:0}html,body{width:1600px!important;height:auto!important;overflow:visible!important;background:white}#viewport,#frame{display:block!important;width:1600px!important;height:auto!important;overflow:visible!important}#deck{transform:none!important;height:auto!important;width:1600px!important}.slide{position:relative!important;display:block!important;width:1600px!important;height:900px!important;break-after:page;page-break-after:always;print-color-adjust:exact;-webkit-print-color-adjust:exact}.slide:last-child{break-after:auto}#toolbar,#exit-present,.progress,.overlay,.controls,.code-next,.terrain-controls,.preset{display:none!important}}
+</style>
+</head>
+<body>
+<main id="viewport" aria-label="매개변수 갱신 발표 자료">
+<div id="frame"><div id="deck">
+
+<!-- 01 -->
+<section class="slide cover" data-key="cover" data-title="매개변수 갱신 — 표지" aria-label="표지">
+ <div class="eyebrow"><span>DEEP LEARNING · 06.1</span><span>학습 관련 기술들</span></div>
+ <h1>매개변수 갱신</h1>
+ <p class="cover-question">기울기를 따라 내려가는 방법은<br><strong>정말 하나뿐일까?</strong></p>
+ <p class="cover-definition">신경망 학습의 목적은 손실함수의 값을 가능한 한 낮추는 매개변수를 찾는 것이다. 같은 기울기를 받아도, <span style="color:var(--ink)">어떻게 갱신하느냐</span>에 따라 내려가는 길이 달라진다.</p>
+ <div class="plot cover-plot" id="cover-plot"></div>
+ <div class="cover-chips"><span class="chip c-sgd"><i></i>SGD</span><span class="chip c-mom"><i></i>모멘텀</span><span class="chip c-ada"><i></i>AdaGrad</span><span class="chip c-adam"><i></i>Adam</span></div>
+ <div class="footer"><span>같은 함수, 같은 출발점 (−7, 2) · 네 가지 갱신 방법의 경로</span><span class="page"></span></div>
+ <aside class="notes"><p class="timing">약 1분 · 주제 소개</p><p>6장은 신경망 학습을 더 잘 되게 만드는 기술들을 다루고, 그 첫 절이 6.1 매개변수 갱신입니다.</p><p>4장에서 배운 경사하강법은 기울기를 구하고 그 반대 방향으로 조금씩 움직이는 방법이었습니다. 그런데 오른쪽 그림처럼 같은 함수, 같은 출발점에서 시작해도 “갱신하는 규칙”을 바꾸면 내려가는 길이 완전히 달라집니다.</p><p>오늘은 SGD, 모멘텀, AdaGrad, Adam 네 가지를 차례로 보고, 각 방법이 왜 이런 모양의 경로를 만드는지 설명하겠습니다.</p></aside>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-key="terrain" data-title="최적화는 눈을 가린 모험가의 여행" aria-label="최적화 비유">
+ <div class="eyebrow"><span>01 · 최적화</span><span>교재 6.1 · 6.1.1</span></div>
+ <h2>최적화는 지도 없이, 눈을 가린 채<br>가장 깊은 골짜기를 찾는 일이다</h2>
+ <div class="idea-row">
+  <div><span class="idea-no">01 · 목표</span><strong>최적화 (optimization)</strong><p>손실함수 값을 가장 작게 만드는<br>매개변수를 찾는 문제</p></div>
+  <div><span class="idea-no">02 · 어려움</span><strong>지도가 없다</strong><p>매개변수 공간은 넓고 복잡하며,<br>심층 신경망은 매개변수 수가 엄청나게 많다</p></div>
+  <div><span class="idea-no">03 · 단서</span><strong class="accent">발밑의 기울기</strong><p>가장 크게 기울어진 방향으로 한 걸음씩<br>내려가는 것이 SGD의 전략</p></div>
+ </div>
+ <div class="terrain-controls"><button class="small-btn primary" id="t-step">한 걸음</button><button class="small-btn" id="t-reset">처음</button><button class="small-btn" id="t-fog">안개 걷기</button><span class="step-readout" id="t-count">걸음 00</span></div>
+ <div class="plot terrain" id="terrain"></div>
+ <div class="footer"><span>모험가는 주변 경치를 볼 수 없지만, 발바닥으로 땅의 기울기는 느낄 수 있다</span><span class="page"></span></div>
+ <aside class="notes"><p class="timing">약 2분 · ‘한 걸음’ 버튼을 몇 번 누르고, 마지막에 ‘안개 걷기’</p><p>교재는 최적화를 모험가 이야기로 비유합니다. 모험가는 가장 깊은 골짜기를 찾고 싶지만 지도를 볼 수 없고, 눈가리개까지 하고 있습니다. 우리가 신경망의 매개변수를 찾는 상황이 바로 이렇습니다. 매개변수가 수백만 개라 손실함수 전체 모양을 그려볼 수 없기 때문입니다.</p><p>그래도 모험가가 알 수 있는 것이 하나 있습니다. 지금 서 있는 땅의 기울기입니다. ‘한 걸음’을 누르면 모험가는 발밑이 가장 크게 기울어진 방향으로 이동합니다. 이것이 SGD, 확률적 경사 하강법의 전략입니다.</p><p>마지막에 ‘안개 걷기’를 누르면, 모험가가 멈춘 곳보다 더 깊은 골짜기가 오른쪽에 있다는 것이 보입니다. 기울기는 주변 정보만 알려주기 때문에, 어떻게 걸을지(갱신 방법)를 잘 정하는 것이 중요하다는 점으로 연결합니다.</p><p>용어: 최적화(optimization)는 “가장 좋은 값 찾기”, 매개변수는 가중치와 편향처럼 학습으로 정해지는 값입니다.</p></aside>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-key="sgd" data-title="SGD와 optimizer 클래스" aria-label="SGD 복습과 구현">
+ <div class="eyebrow"><span>02 · SGD</span><span>교재 6.1.2</span></div>
+ <h2>SGD: 기울어진 방향으로 일정 거리만 간다</h2>
+ <p class="subtitle">확률적 경사 하강법(stochastic gradient descent) · 지금까지 사용한 방법을 클래스로 정리하기</p>
+ <div class="sgd-layout">
+  <div>
+   <div class="math big-eq"><b>W</b><sub>t+1</sub> = <b>W</b><sub>t</sub> − <span class="accent">η</span> <span class="frac"><span>∂L</span><span>∂<b>W</b><sub>t</sub></span></span><span class="eq-tag">식 6.1</span></div>
+   <div class="eq-parts">
+    <div class="eq-part"><span class="math"><b>W</b><sub>t</sub></span><span><strong>지금(t번째) 가중치</strong> · <b>W</b><sub>t+1</sub>은 한 번 갱신한 다음 가중치</span></div>
+    <div class="eq-part"><span class="math"><span class="frac"><span>∂L</span><span>∂<b>W</b><sub>t</sub></span></span></span><span><strong>지금 위치에서의 손실함수 기울기</strong> · W를 조금 바꿀 때 손실이 얼마나 변하는지</span></div>
+    <div class="eq-part"><span class="math accent">η</span><span><strong>학습률</strong> · 0.01, 0.001처럼 미리 정해 두는 한 걸음의 크기</span></div>
+    <div class="eq-part"><span class="math">t → t+1</span><span>지금 값으로 <strong>다음 값</strong>을 만든다 (교재는 ← 기호로 표기)</span></div>
+   </div>
+   <div class="swap-box"><div class="swap-title">optimizer만 바꾸면 갱신 방법이 바뀐다</div><div class="swap-chips" id="swap-chips"></div></div>
+  </div>
+  <div><div class="code-panel"><div class="code-label"><span>PYTHON · NUMPY</span><span>common/optimizer.py</span></div><div class="code-lines" id="sgd-code"></div></div></div>
+ </div>
+ <p class="code-stage-text" id="code-stage-text"></p>
+ <button class="small-btn primary code-next" id="code-next">다음 동작</button>
+ <div class="footer"><span>optimizer = ‘최적화를 행하는 자’ · 모든 기법이 같은 update(params, grads)를 가진다</span><span class="page"></span></div>
+ <aside class="notes"><p class="timing">약 2분 · ‘다음 동작’으로 코드 강조, 아래 칩을 눌러 optimizer 교체</p><p>SGD의 식은 4장에서 본 경사하강법 그대로입니다. 가중치 W에서 학습률 η와 기울기를 곱한 값을 뺍니다. 아래첨자 t는 몇 번째 갱신인지를 나타냅니다. 지금 가중치 Wₜ로 다음 가중치 Wₜ₊₁을 만든다는 뜻이고, 교재는 같은 내용을 ← 기호로 씁니다.</p><p>교재는 이것을 SGD라는 클래스로 만듭니다. __init__에서 학습률을 저장하고, update(params, grads)에서 매개변수마다 식 6.1을 적용합니다. params와 grads는 ‘W1’, ‘b1’ 같은 이름으로 값을 저장한 딕셔너리입니다.</p><p>중요한 설계 포인트는 학습 반복문은 optimizer.update만 부른다는 것입니다. 그래서 optimizer = SGD()를 optimizer = Momentum()으로 바꾸기만 하면 다른 기법이 됩니다. 아래 칩을 눌러 보여주세요. 이렇게 기능을 분리하는 것을 모듈화라고 합니다. 레고 블록처럼 갈아 끼울 수 있게 만든다는 뜻입니다.</p><p>참고로 아래쪽 반복문은 그대로 실행되는 코드가 아니라 흐름을 보여주는 의사 코드입니다.</p></aside>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-key="aniso" data-title="기울기는 최솟값을 가리키지 않는다" aria-label="비등방성">
+ <div class="eyebrow"><span>03 · SGD의 단점</span><span>교재 6.1.3</span></div>
+ <h2>기울기는 최솟값을 가리키지 않는다</h2>
+ <p class="subtitle">y 방향은 가파르고 x 방향은 완만한 함수 · 그래프를 클릭해 위치를 바꿔 보기</p>
+ <div class="field-layout">
+  <div class="plot field" id="aniso-plot" style="cursor:crosshair"></div>
+  <div class="side-copy">
+   <div class="math equation">f(x, y) = <span class="frac"><span>1</span><span>20</span></span>x² + y²<span class="eq-tag">식 6.2</span></div>
+   <div class="math" style="font-size:28px;margin-top:6px">∇f = ( x / 10 , 2y )</div>
+   <div class="read-grid" id="aniso-read"></div>
+   <div class="angle-big" id="aniso-angle"></div>
+   <p class="fine" style="margin-top:4px">이동 방향(주황)과 최솟값 방향(점선)이 이루는 각</p>
+   <div class="preset" id="aniso-preset"></div>
+   <div class="rule" style="margin:18px 0 14px"></div>
+   <div class="term"><strong>비등방성 (anisotropy)</strong><br>방향에 따라 성질이 달라지는 것. 이 함수는 y로 한 칸 갈 때가 x로 한 칸 갈 때보다 훨씬 가파르다.</div>
+  </div>
+ </div>
+ <div class="footer"><span>화살표: 각 위치에서 SGD가 이동하는 방향 (−∇f) · 최솟값은 (0, 0)</span><span class="page"></span></div>
+ <aside class="notes"><p class="timing">약 2분 · 그래프 몇 군데를 클릭하며 각도 변화 보여주기</p><p>SGD의 약점을 보기 위해 교재는 f(x, y) = x²/20 + y²라는 함수를 사용합니다. x 방향으로 쭉 늘어난 밥그릇 모양이고, 등고선은 가로로 긴 타원입니다.</p><p>기울기를 계산하면 (x/10, 2y)입니다. x 성분에는 1/10이 곱해지고 y 성분에는 2가 곱해지니, y 방향 기울기가 훨씬 큽니다. 그래서 회색 화살표가 대부분 위아래를 향합니다.</p><p>최솟값은 (0, 0)인데, 화살표 대부분은 (0, 0)을 향하지 않습니다. 시작점 (−7, 2)에서 SGD가 가려는 방향과 실제 최솟값 방향 사이에는 60도가 넘는 차이가 있습니다. x축 근처 아무 곳이나 클릭하면 각도가 90도에 가까워지는 것을 볼 수 있습니다.</p><p>이렇게 방향마다 성질이 다른 것을 비등방성이라고 합니다. 한쪽은 절벽, 한쪽은 평지 같은 골짜기를 떠올리면 됩니다.</p></aside>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-key="zigzag" data-title="SGD의 지그재그 경로" aria-label="SGD 지그재그">
+ <div class="eyebrow"><span>03 · SGD의 단점</span><span>교재 6.1.3 · 그림 6-3</span></div>
+ <h2>SGD는 골짜기 양쪽을 오가며 느리게 전진한다</h2>
+ <p class="subtitle">학습률 η = 0.95 · 시작점 (−7, 2)에서 29회 갱신</p>
+ <div class="field-layout">
+  <div class="plot field" id="sgd-plot"></div>
+  <div class="side-copy">
+   <div class="axis-row" style="border-top:0;padding-top:0"><strong>y 방향 · 가파름</strong><span class="math c-sgd">y<sub>t+1</sub> = (1 − 0.95×2) y<sub>t</sub> = −0.9 y<sub>t</sub></span><p>계수가 음수 → 매번 부호가 바뀌며 위아래로 튄다</p><div class="plot series" id="sgd-y"></div></div>
+   <div class="axis-row"><strong>x 방향 · 완만함</strong><span class="math" style="color:var(--blue)">x<sub>t+1</sub> = (1 − 0.95×0.1) x<sub>t</sub> = 0.905 x<sub>t</sub></span><p>한 번에 남은 거리의 9.5%만 줄어든다</p><div class="plot series" id="sgd-x"></div></div>
+  </div>
+ </div>
+ <div class="controls"><div class="control"><button class="small-btn primary" id="sgd-play">재생</button><button class="small-btn" id="sgd-step">한 단계</button><button class="small-btn" id="sgd-reset">처음</button></div><input type="range" id="sgd-slider" min="0" max="29" aria-label="SGD 갱신 횟수"><span class="step-readout" id="sgd-count"></span></div>
+ <p class="claim">y가 튀지 않게 η를 줄이면 → x는 더 느려진다</p>
+ <div class="footer"><span>4.4에서 본 ‘방향별 곡률 차이’가 만든 지그재그 · 이 함수의 곡률은 x 방향 0.1, y 방향 2</span><span class="page"></span></div>
+ <aside class="notes"><p class="timing">약 2분 30초 · ‘처음’ → ‘재생’, 오른쪽 두 그래프를 가리키며 설명</p><p>이제 (−7, 2)에서 SGD를 실행합니다. 경로가 심하게 지그재그로 움직입니다. 교재 그림 6-3과 같은 결과입니다.</p><p>4.4에서 배운 방식으로 축을 나눠 보면 이유가 보입니다. y 방향은 기울기가 2y이므로 한 번 갱신하면 y가 (1 − 0.95×2)배, 즉 −0.9배가 됩니다. 음수를 곱하니 부호가 계속 바뀌어 골짜기 위아래를 왔다 갔다 합니다.</p><p>x 방향은 기울기가 x/10이라 x가 0.905배가 됩니다. 부호는 그대로지만 한 번에 9.5%씩만 줄어들어서 전진이 느립니다.</p><p>문제는 학습률이 하나뿐이라는 점입니다. y의 흔들림을 줄이려고 η를 낮추면 x는 더 느려집니다. 교재는 SGD가 비효율적인 근본 원인을 “기울어진 방향이 본래의 최솟값과 다른 방향을 가리키기 때문”이라고 정리합니다. 이제부터 소개할 세 기법이 이 문제를 각자의 방식으로 해결합니다.</p></aside>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-key="momc" data-title="모멘텀: 속도를 기억한다" aria-label="모멘텀 개념">
+ <div class="eyebrow"><span>04 · 모멘텀</span><span>교재 6.1.4</span></div>
+ <h2>모멘텀: 굴러온 속도를 기억하며 내려간다</h2>
+ <p class="subtitle">모멘텀(momentum) = 운동량 · 공이 그릇 바닥을 구르는 모습을 흉내 낸다</p>
+ <div class="mom-layout">
+  <div>
+   <div class="eqc">
+    <div class="eqc-row base"><span class="lbl">SGD<small>4.4 · 식 6.1</small></span><span class="math"><b>W</b><sub>t+1</sub> = <b>W</b><sub>t</sub> <span class="c-sgd">− η <span class="frac"><span>∂L</span><span>∂<b>W</b><sub>t</sub></span></span></span></span></div>
+    <div class="eqc-row"><span class="lbl c-mom">모멘텀<small>식 6.3 · 6.4</small></span><span class="math"><span class="newv"><b>v</b><sub>t+1</sub></span> = <span class="new">α<b>v</b><sub>t</sub></span> <span class="c-sgd">− η <span class="frac"><span>∂L</span><span>∂<b>W</b><sub>t</sub></span></span></span><br><b>W</b><sub>t+1</sub> = <b>W</b><sub>t</sub> + <span class="newv"><b>v</b><sub>t+1</sub></span></span></div>
+   </div>
+   <div class="diff">
+    <div><span class="n">01</span><span><b class="c-mom">αvₜ 항이 추가</b>됐다 · 이전 속도의 90%를 이어받는 관성 (α = 0.9는 마찰 역할)</span></div>
+    <div><span class="n">02</span><span>기울기 항은 그대로, 단 <b>W를 바로 움직이지 않고 v에 더한 뒤</b> v만큼 이동</span></div>
+    <div><span class="n">03</span><span>α = 0이면 vₜ₊₁ = −η∂L/∂Wₜ → <b>SGD와 똑같아진다</b></span></div>
+   </div>
+   <div class="plot bowl" id="bowl"></div>
+  </div>
+  <div>
+   <div class="bar-title"><b>x 방향 속도 v<sub>x</sub></b><span>방향이 같아 쌓이며 커진다</span></div>
+   <div class="plot vbar" id="vx-bars"></div>
+   <div class="bar-title"><b>y 방향 속도 v<sub>y</sub></b><span>방향이 번갈아 바뀜 → 서로 상쇄된다</span></div>
+   <div class="plot vbar" id="vy-bars"></div>
+  </div>
+ </div>
+ <div class="controls" style="left:772px"><div class="control"><button class="small-btn primary" id="vel-play">재생</button><button class="small-btn" id="vel-step">한 단계</button><button class="small-btn" id="vel-reset">처음</button></div><input type="range" id="vel-slider" min="0" max="29" aria-label="모멘텀 갱신 횟수" style="width:200px"><span class="step-readout" id="vel-count"></span></div>
+ <div class="footer"><span>막대: 각 갱신에서의 속도 v · 학습률 η = 0.1, α = 0.9, 시작점 (−7, 2)</span><span class="page"></span></div>
+ <aside class="notes"><p class="timing">약 2분 30초 · 식 설명 후 오른쪽 막대 재생</p><p>모멘텀은 물리에서 운동량을 뜻합니다. 새로 등장한 v는 속도(velocity)입니다.</p><p>먼저 4.4의 경사하강법, 즉 SGD 식과 비교해 보겠습니다. 위 줄의 SGD는 지금 가중치에서 η×기울기를 바로 빼서 다음 가중치를 만듭니다. 모멘텀에서 달라진 곳은 두 군데입니다. 첫째, 파란 상자 αvₜ 항이 새로 추가되었습니다. 둘째, 기울기 항으로 W를 바로 움직이지 않고, 먼저 속도 v에 더한 다음 그 속도만큼 W를 움직입니다. 그래서 α를 0으로 두면 vₜ₊₁ = −η∂L/∂Wₜ가 되어 SGD와 완전히 같아집니다.</p><p>모멘텀 식을 두 부분으로 나눠 보겠습니다. 파란 αv는 이전 속도를 얼마나 이어받을지입니다. α는 보통 0.9로, 아무 힘을 받지 않으면 속도가 매번 10%씩 줄어듭니다. 지면 마찰이나 공기 저항과 같은 역할입니다. 주황색 −η∂L/∂W는 지금 위치의 기울기가 주는 힘입니다. 식 6.4에서 이 속도만큼 W를 이동합니다.</p><p>왼쪽 아래 그림의 공처럼, 속도가 쌓여서 바닥을 지나쳤다가 마찰 때문에 점점 멈추는 움직임이 생깁니다.</p><p>오른쪽 막대가 핵심입니다. x 방향 기울기는 작지만 늘 같은 방향을 가리키므로 속도가 계속 쌓여 커집니다. y 방향 기울기는 부호가 번갈아 바뀌므로 이전 속도와 이번 힘이 서로 상쇄되어 속도가 빨리 줄어듭니다. 다음 장에서 이것이 경로에 어떻게 나타나는지 봅니다.</p><p>구현 팁: 교재 코드에서 v는 처음에 None이고, 첫 update 때 매개변수와 같은 모양의 0 배열(np.zeros_like)로 만들어집니다.</p></aside>
+</section>
+
+<!-- 06b -->
+<section class="slide" data-key="momx" data-title="모멘텀 식 풀어 보기" aria-label="모멘텀 식 풀어 보기">
+ <div class="eyebrow"><span>04 · 모멘텀</span><span>식 6.3 풀어 보기</span></div>
+ <h2>속도 v는 과거 기울기를 차곡차곡 더한 값이다</h2>
+ <p class="subtitle">y 방향(가파른 쪽)을 한 단계씩 따라가기 · η = 0.1, α = 0.9, 시작 y = 2</p>
+ <div class="momx-layout">
+  <div>
+   <table class="vt" id="momx-table"></table>
+   <div class="vt-notes">
+    <div><span class="tag t1">4단계</span><span>기울기가 거의 0인데도 쌓인 속도 때문에 <b>y = 0을 지나친다</b> — 관성</span></div>
+    <div><span class="tag t2">5·6단계</span><span>이번 힘이 <b style="color:var(--orange)">+</b>로 바뀌어 쌓인 속도를 깎는다 — <b>상쇄</b></span></div>
+   </div>
+  </div>
+  <div class="unroll">
+   <div class="bar-title" style="font-size:20px"><b>v<sub>t+1</sub> = αv<sub>t</sub> − ηg<sub>t</sub>에 이전 v를 계속 대입하면</b><span>g<sub>t</sub> = ∂L/∂W<sub>t</sub></span></div>
+   <div class="math equation" style="margin-top:6px"><b>v</b><sub>t+1</sub> = −η ( g<sub>t</sub> + <span class="c-mom">0.9</span> g<sub>t−1</sub> + <span class="c-mom">0.81</span> g<sub>t−2</sub> + … )</div>
+   <div class="plot w-plot" id="momx-w"></div>
+   <div class="bar-title" style="font-size:20px;margin-top:10px">기울기 패턴에 따른 한 번의 이동량 <span>SGD를 1로 볼 때</span></div>
+   <div class="plot case-plot" id="momx-case"></div>
+  </div>
+ </div>
+ <div class="footer"><span>α = 0이면 vₜ₊₁ = −η∂L/∂Wₜ가 되어 SGD와 같다 · 코드는 W += v (v 안에 이미 −가 들어 있다)</span><span class="page"></span></div>
+ <aside class="notes"><p class="timing">약 2분 · 왼쪽 표를 위에서 아래로, 오른쪽 식으로 정리</p><p>식 6.3이 실제로 어떻게 움직이는지 y 방향만 숫자로 따라가 보겠습니다. 1단계에서는 이전 속도가 0이라 이번 힘 −0.1×4 = −0.4가 그대로 속도가 됩니다. 이건 SGD와 같습니다.</p><p>2단계부터 차이가 납니다. 이전 속도 −0.4의 90%인 −0.36에 이번 힘 −0.32가 더해져 속도가 −0.68로 커집니다. 3단계에서도 같은 방향이라 −0.80까지 커집니다.</p><p>4단계를 보세요. 기울기는 0.25로 거의 0인데, 쌓인 속도 때문에 y = 0을 지나쳐 −0.62까지 갑니다. 이것이 관성입니다. 5, 6단계에서는 기울기가 음수가 되어 이번 힘이 +로 바뀌고, 쌓인 속도를 깎습니다. 방향이 번갈아 바뀌는 힘은 이렇게 서로 상쇄됩니다.</p><p>오른쪽은 v에 이전 v를 계속 대입해 펼친 식입니다. 속도는 과거 기울기들에 1, 0.9, 0.81, … 의 가중치를 곱해 더한 값입니다. 최근 기울기일수록 크게, 오래된 기울기일수록 작게 반영됩니다.</p><p>그래서 기울기 방향이 계속 같으면 합이 쌓여 최대 1/(1−0.9) = 10배까지 커지고, +와 −가 번갈아 나오면 1/(1+0.9) ≈ 0.53배로 줄어듭니다. x 방향은 앞쪽, y 방향은 뒤쪽 상황입니다.</p><p>마지막으로 α를 0으로 두면 v = −η∂L/∂W가 되어 SGD와 완전히 같아집니다. 모멘텀은 SGD에 ‘이전 속도 기억’을 붙인 것입니다. 코드에서는 v 안에 이미 마이너스가 들어 있으므로 W에서 빼지 않고 더한다는 점도 짚어 주세요.</p></aside>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-key="momp" data-title="모멘텀의 갱신 경로" aria-label="모멘텀 경로">
+ <div class="eyebrow"><span>04 · 모멘텀</span><span>교재 6.1.4 · 그림 6-5</span></div>
+ <h2>흔들리는 방향은 상쇄되고, 일정한 방향은 가속된다</h2>
+ <p class="subtitle">학습률 η = 0.1 · α = 0.9 · 점선은 앞의 SGD 경로</p>
+ <div class="field-layout">
+  <div class="plot field" id="mom-plot"></div>
+  <div class="side-copy">
+   <div class="fine" style="font-size:18px;margin-bottom:4px">y 방향 부호가 바뀐 횟수 (29회 갱신 중)</div>
+   <div class="stat-pair"><div class="stat c-sgd"><div class="num">29</div><p>SGD · 매번 반대편으로</p></div><div class="stat c-mom"><div class="num">4</div><p>모멘텀 · 크게 출렁이다 가라앉음</p></div></div>
+   <div class="why">
+    <div><b class="c-mom">x</b><span>힘은 아주 작지만 방향이 변하지 않아 한 방향으로 <b>점점 가속</b></span></div>
+    <div><b class="c-mom">y</b><span>힘은 크지만 위아래로 번갈아 받아 <b>속도가 상쇄</b>되어 안정되지 않는다</span></div>
+   </div>
+   <div class="mini-code" style="margin-top:14px"><span class="cap">Momentum.update · 핵심 두 줄</span><span class="kw">v</span> = momentum * v - lr * grad
+w += v</div>
+  </div>
+ </div>
+ <div class="controls"><div class="control"><button class="small-btn primary" id="mom-play">재생</button><button class="small-btn" id="mom-step">한 단계</button><button class="small-btn" id="mom-reset">처음</button></div><input type="range" id="mom-slider" min="0" max="29" aria-label="모멘텀 갱신 횟수"><span class="step-readout" id="mom-count"></span></div>
+ <div class="footer"><span>주황 화살표: 현재 속도 v의 방향과 크기</span><span class="page"></span></div>
+ <aside class="notes"><p class="timing">약 2분 · 재생하면서 x 방향으로 빨라지는 모습 강조</p><p>같은 함수, 같은 출발점에서 모멘텀을 실행한 결과입니다. 교재 그림 6-5처럼 공이 그릇 바닥을 구르는 듯한 경로가 나옵니다. 점선은 앞에서 본 SGD 경로입니다.</p><p>SGD는 29번 갱신하는 동안 y의 부호가 29번 바뀌었습니다. 모멘텀은 처음에 크게 출렁인 뒤 4번만 바뀝니다.</p><p>x 방향은 받는 힘이 아주 작지만 방향이 항상 같아서 속도가 쌓이고, 그래서 SGD보다 x 방향으로 빠르게 다가갑니다. y 방향은 힘이 크지만 번갈아 받으니 서로 상쇄되어 지그재그가 줄어듭니다.</p><p>다만 속도가 쌓인 만큼 최솟값을 조금 지나쳐서 x가 양수 쪽으로 넘어갔다가 돌아오는 모습도 보입니다. 관성이 있으니 바로 멈추지 못하는 것입니다.</p></aside>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-key="adac" data-title="AdaGrad: 매개변수마다 보폭 조절" aria-label="AdaGrad 개념">
+ <div class="eyebrow"><span>05 · AdaGrad</span><span>교재 6.1.5</span></div>
+ <h2>AdaGrad: 많이 움직인 매개변수일수록 보폭을 줄인다</h2>
+ <p class="subtitle">학습률 감소(learning rate decay)를 매개변수마다 따로, 맞춤형(adaptive)으로 적용한다</p>
+ <div class="ada-layout">
+  <div>
+   <div class="decay-cards">
+    <div><strong>학습률 감소</strong><p>처음엔 크게, 점점 작게.<br>모든 매개변수가 <b>같이</b> 줄인다</p><svg viewBox="0 0 280 70" aria-hidden="true"><path d="M8,12 C70,14 100,40 272,56" fill="none" stroke="#152c3d" stroke-width="3"/><text x="272" y="30" text-anchor="end" font-size="14" fill="#687780">η 하나</text></svg></div>
+    <div style="border-color:var(--ada)"><strong class="c-ada">AdaGrad</strong><p>매개변수마다 <b>각자</b> 줄인다.<br>많이 움직인 쪽을 더 많이</p><svg viewBox="0 0 280 70" aria-hidden="true"><path d="M8,8 C60,10 110,18 272,26" fill="none" stroke="#177e81" stroke-width="3" stroke-dasharray="7 5"/><path d="M8,40 C40,58 110,62 272,64" fill="none" stroke="#177e81" stroke-width="3"/><text x="272" y="20" text-anchor="end" font-size="14" fill="#687780">x</text><text x="40" y="66" font-size="14" fill="#687780">y</text></svg></div>
+   </div>
+   <div class="ada-eq">
+    <div class="math equation"><b>h</b><sub>t+1</sub> = <b>h</b><sub>t</sub> + <span class="frac"><span>∂L</span><span>∂<b>W</b><sub>t</sub></span></span> ⊙ <span class="frac"><span>∂L</span><span>∂<b>W</b><sub>t</sub></span></span><span class="eq-tag">식 6.5</span></div>
+    <div class="math equation"><b>W</b><sub>t+1</sub> = <b>W</b><sub>t</sub> − η <span class="c-ada"><span class="frac"><span>1</span><span>√<b>h</b><sub>t+1</sub></span></span></span> <span class="frac"><span>∂L</span><span>∂<b>W</b><sub>t</sub></span></span><span class="eq-tag">식 6.6</span></div>
+   </div>
+   <div class="ada-anno">
+    <div><b>h</b> · 지금까지 받은 기울기 <b>제곱의 누적합</b> (누적 피로도, 처음엔 0). 제곱하면 부호는 사라지고 “얼마나 크게 움직였나”만 쌓인다</div>
+    <div><b>⊙</b> · 원소별 곱. 같은 자리끼리만 곱한다 (행렬곱이 아님 → 코드로는 <span style="font-family:var(--mono)">*</span>)</div>
+    <div><b class="c-ada">1/√h</b> · √로 기울기 단위로 되돌려 나눈다 → g/√h는 대략 ±1, 실제 보폭은 η가 정하고 많이 움직인 매개변수일수록 작아진다</div>
+   </div>
+  </div>
+  <div>
+   <div class="bar-title" style="font-size:21px">실제 보폭 계수 η / √h <span id="ada-stepinfo"></span></div>
+   <div class="gauge-row"><span class="math" style="font-size:23px">x 방향</span><div class="gauge"><i id="gx" style="background:var(--ink)"></i></div><span class="gauge-val" id="gxv"></span></div>
+   <div class="gauge-row"><span class="math" style="font-size:23px">y 방향</span><div class="gauge"><i id="gy" style="background:var(--ada)"></i></div><span class="gauge-val" id="gyv"></span></div>
+   <div class="plot eff" id="ada-eff"></div>
+   <p class="fine" id="ada-explain" style="font-size:18px"></p>
+  </div>
+ </div>
+ <div class="controls" style="left:788px"><div class="control"><button class="small-btn primary" id="eff-play">재생</button><button class="small-btn" id="eff-step">한 단계</button><button class="small-btn" id="eff-reset">처음</button></div><input type="range" id="eff-slider" min="1" max="29" aria-label="AdaGrad 갱신 횟수" style="width:190px"><span class="step-readout" id="eff-count"></span></div>
+ <div class="footer"><span>η = 1.5 · 시작점 (−7, 2) · 막대가 길수록 그 방향으로 크게 움직인다</span><span class="page"></span></div>
+ <aside class="notes"><p class="timing">약 2분 30초 · 왼쪽 개념 → 오른쪽 게이지</p><p>학습률은 너무 작으면 학습이 오래 걸리고, 너무 크면 발산합니다. 그래서 처음엔 크게, 점점 작게 학습률을 줄여 가는 학습률 감소가 자주 쓰입니다. 왼쪽 카드처럼 보통은 모든 매개변수의 학습률을 한꺼번에 줄입니다.</p><p>AdaGrad는 이것을 매개변수마다 따로 합니다. h에 지금까지 받은 기울기의 제곱을 계속 더하고, 갱신할 때 1/√h를 곱합니다. 기울기를 많이 받은, 즉 많이 움직인 매개변수일수록 h가 커지고 보폭이 작아집니다. ⊙는 행렬곱이 아니라 같은 위치끼리의 곱입니다.</p><p>오른쪽 게이지를 보세요. 첫 갱신에서 y의 기울기는 4라서 h = 16이 되고, 보폭 계수는 1.5/4 = 0.375로 떨어집니다. x의 기울기는 −0.7이라 h = 0.49이고, 보폭 계수는 1.5/0.7 ≈ 2.14입니다. 가파른 y 방향은 자동으로 조심스럽게, 완만한 x 방향은 과감하게 움직이게 되는 것입니다.</p><p>왜 제곱하고 루트를 씌울까요? 기울기가 −4든 +4든 ‘크게 움직였다’는 사실은 같으니 제곱해서 부호를 없애고 크기만 쌓습니다. 그리고 루트로 다시 기울기와 같은 단위로 되돌려 나누면 g/√h가 대략 −1에서 +1 사이가 되어, 실제 이동 거리는 주로 학습률 η가 정하게 됩니다.</p><p>신경망에서 AdaGrad가 원래 노린 효과도 있습니다. 드물게 등장하는 입력에 연결된 가중치는 기울기를 별로 받지 못해 h가 작으므로 큰 학습률을 유지하고, 기회가 왔을 때 확실히 배웁니다. 자주 갱신되는 가중치는 조심스럽게 움직입니다.</p></aside>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-key="adap" data-title="AdaGrad의 갱신 경로" aria-label="AdaGrad 경로">
+ <div class="eyebrow"><span>05 · AdaGrad</span><span>교재 6.1.5 · 그림 6-6</span></div>
+ <h2>y 방향의 보폭이 빠르게 줄어 지그재그가 사라진다</h2>
+ <p class="subtitle">학습률 η = 1.5 · 점선은 앞의 SGD 경로</p>
+ <div class="field-layout">
+  <div class="plot field" id="ada-plot"></div>
+  <div class="side-copy">
+   <div class="bar-title" style="font-size:21px">처음 두 번의 갱신</div>
+   <div class="first-step"><div class="math">Δx = −1.5 × <span class="frac"><span>−0.7</span><span>√0.49</span></span> = <span class="c-ada">+1.5</span></div><div class="math">Δy = −1.5 × <span class="frac"><span>4</span><span>√16</span></span> = <span class="c-ada">−1.5</span></div><p><b style="color:var(--ink)">1회차</b> · h = 기울기²라서 크기가 약분되어 두 축 모두 정확히 η = 1.5만큼 → (−5.5, 0.5)</p><p style="margin-top:6px"><b style="color:var(--ink)">2회차</b> · y 기울기는 1로 작아졌지만 h = 16 + 1 = 17이 남아 Δy = −1.5/√17 = <b class="c-ada">−0.36</b>. 같은 자리에서 SGD(η = 0.95)라면 −0.95로 반대편까지 튄다</p></div>
+   <div class="mini-code" style="margin-top:16px"><span class="cap">AdaGrad.update · 1e-7은 0으로 나누기를 막는 아주 작은 값</span>h += grad * grad
+w -= lr * grad / (np.sqrt(h) + <span class="swap">1e-7</span>)</div>
+   <p class="rms"><b style="color:var(--ink)">한계</b> · 제곱을 계속 더하므로 오래 학습하면 갱신량이 0에 가까워진다. 이를 개선한 <b style="color:var(--ink)">RMSProp</b>은 먼 과거의 기울기는 서서히 잊고 최근 기울기를 크게 반영한다(지수이동평균).</p>
+  </div>
+ </div>
+ <div class="controls"><div class="control"><button class="small-btn primary" id="ada-play">재생</button><button class="small-btn" id="ada-step">한 단계</button><button class="small-btn" id="ada-reset">처음</button></div><input type="range" id="ada-slider" min="0" max="29" aria-label="AdaGrad 갱신 횟수"><span class="step-readout" id="ada-count"></span></div>
+ <div class="footer"><span>회색 화살표: 첫 갱신의 x, y 성분</span><span class="page"></span></div>
+ <aside class="notes"><p class="timing">약 2분 · 첫 갱신 계산 → 재생</p><p>AdaGrad 경로입니다. 교재 그림 6-6처럼 최솟값을 향해 효율적으로 움직입니다.</p><p>첫 갱신을 직접 계산해 보면 재미있는 점이 있습니다. 첫 번째에는 h가 기울기의 제곱 하나뿐이라, 기울기를 √h로 나누면 크기가 약분되고 부호만 남습니다. 그래서 x와 y 모두 정확히 학습률 1.5만큼 움직여 (−5.5, 0.5)에 도착합니다. 2회차에는 y의 기울기가 1로 작아졌지만 h에 16이 남아 있어 h = 17, 보폭은 1.5/√17 ≈ 0.36으로 확 줄어듭니다. 같은 자리에서 SGD였다면 0.95만큼 움직여 반대편으로 튀었을 것입니다. 기울기 크기가 6배 가까이 차이 나는데도 같은 거리를 움직인 것입니다.</p><p>그 뒤로는 y 방향에서 받은 큰 기울기가 h에 남아 있어 y 보폭이 크게 줄어들고, 지그재그 없이 x 방향으로 미끄러져 갑니다.</p><p>코드에서 1e-7은 0.0000001로, h가 0일 때 0으로 나누는 오류를 막습니다. 마지막으로 AdaGrad의 한계: 제곱을 끝없이 더하니 언젠가 갱신이 거의 멈춥니다. 이를 고친 RMSProp은 지수이동평균을 써서 최근 기울기에 더 큰 비중을 둡니다. 지수이동평균은 오래된 값일수록 영향력을 기하급수적으로 줄이는 평균입니다.</p></aside>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-key="adam" data-title="Adam: 두 기법의 융합" aria-label="Adam">
+ <div class="eyebrow"><span>06 · Adam</span><span>교재 6.1.6 · 그림 6-7</span></div>
+ <h2>Adam: 모멘텀의 관성과 AdaGrad의 맞춤 보폭을 합친다</h2>
+ <div class="adam-layout">
+  <div>
+   <div class="merge">
+    <div class="mcard c-mom"><strong>모멘텀</strong><p>속도를 기억한다<br>→ 일정한 방향으로 가속</p></div>
+    <div class="plus">+</div>
+    <div class="mcard c-ada"><strong>AdaGrad</strong><p>기울기 크기를 기억한다<br>→ 매개변수별 보폭 조절</p></div>
+   </div>
+   <div class="merge-arrow">↓</div>
+   <div class="adam-card"><strong>Adam</strong><p>2015년 제안. 두 장점을 함께 노린다. 처음 몇 번의 갱신에서 값이 0 쪽으로 치우치는 것을 바로잡는 <b style="color:var(--ink)">편향 보정</b>도 들어 있다.</p></div>
+   <div class="hp">
+    <div class="fine" style="font-size:17px;margin-bottom:4px"><b style="color:var(--ink)">하이퍼파라미터 3개</b> · 사람이 미리 정하는 설정값</div>
+    <div class="hp-row"><span class="math">η (α)</span><b>0.3</b><span>학습률 · 이 예제의 값</span></div>
+    <div class="hp-row"><span class="math">β<sub>1</sub></span><b>0.9</b><span>일차 모멘텀 계수 · 속도를 얼마나 기억할지</span></div>
+    <div class="hp-row"><span class="math">β<sub>2</sub></span><b>0.999</b><span>이차 모멘텀 계수 · 기울기 크기를 얼마나 기억할지</span></div>
+   </div>
+  </div>
+  <div><div class="plot adam-field" id="adam-plot"></div></div>
+ </div>
+ <div class="controls" style="left:722px"><div class="control"><button class="small-btn primary" id="adam-play">재생</button><button class="small-btn" id="adam-step">한 단계</button><button class="small-btn" id="adam-reset">처음</button></div><input type="range" id="adam-slider" min="0" max="29" aria-label="Adam 갱신 횟수" style="width:220px"><span class="step-readout" id="adam-count"></span></div>
+ <div class="footer"><span>점선: 모멘텀 경로 · β₁ = 0.9, β₂ = 0.999는 논문의 기본값</span><span class="page"></span></div>
+ <aside class="notes"><p class="timing">약 2분 · 왼쪽 결합 도식 → 오른쪽 재생</p><p>모멘텀은 속도를 기억해 공처럼 굴러가고, AdaGrad는 기울기 크기를 기억해 매개변수마다 보폭을 조절했습니다. 두 가지를 합치면 어떨까 하는 생각에서 나온 것이 Adam입니다. 2015년에 제안되었고, 이론은 복잡하지만 직관적으로는 두 기법의 융합으로 이해하면 됩니다.</p><p>Adam에는 편향 보정이라는 장치도 있습니다. 기억값을 0에서 시작하기 때문에 처음 몇 번은 값이 실제보다 작게 치우치는데, 그것을 바로잡는 것입니다.</p><p>하이퍼파라미터는 세 개입니다. 학습률, 그리고 β₁ = 0.9, β₂ = 0.999입니다. β₁은 속도를, β₂는 기울기 크기를 얼마나 오래 기억할지 정합니다. 논문 기본값이 대부분 잘 동작한다고 알려져 있습니다.</p><p>경로를 재생하면 모멘텀처럼 그릇 바닥을 구르지만, 점선인 모멘텀보다 좌우로 덜 흔들립니다. 보폭을 매개변수마다 조정한 효과입니다.</p></aside>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-key="cmp" data-title="네 기법 비교" aria-label="네 기법 비교">
+ <div class="eyebrow"><span>07 · 비교</span><span>교재 6.1.7 · 그림 6-8</span></div>
+ <h2>그림만 보면 AdaGrad가 이긴 것 같지만…</h2>
+ <div class="cmp-layout">
+  <div class="quad" id="quad"></div>
+  <div>
+   <div class="bar-title" style="font-size:20px">갱신 횟수에 따른 손실 f <span>세로축 로그</span></div>
+   <div class="plot cmp-loss" id="cmp-loss"></div>
+   <div class="caution">
+    <div><b>학습률이 모두 다르다</b><br><span class="lrs"><span class="c-sgd">0.95</span> · <span class="c-mom">0.1</span> · <span class="c-ada">1.5</span> · <span class="c-adam">0.3</span></span></div>
+    <div><b>경로가 매끄럽다 ≠ 손실이 낮다</b><br>29회 시점 손실은 SGD가 모멘텀·Adam보다 낮다</div>
+    <div><b>모든 문제에서 뛰어난 기법은 (아직) 없다</b><br>풀 문제와 하이퍼파라미터에 따라 결과가 달라진다</div>
+   </div>
+  </div>
+ </div>
+ <div class="controls"><div class="control"><button class="small-btn primary" id="cmp-play">모두 재생</button><button class="small-btn" id="cmp-step">한 단계</button><button class="small-btn" id="cmp-reset">처음</button></div><input type="range" id="cmp-slider" min="0" max="29" aria-label="비교 갱신 횟수"><span class="step-readout" id="cmp-count"></span></div>
+ <div class="footer"><span>같은 함수 f = x²/20 + y², 같은 출발점 (−7, 2), 29회 갱신 · 오른쪽 숫자는 현재 손실</span><span class="page"></span></div>
+ <aside class="notes"><p class="timing">약 2분 30초 · ‘모두 재생’ 후 주의점 세 가지</p><p>네 기법을 나란히 놓으면 교재 그림 6-8입니다. ‘모두 재생’을 누르면 같은 시점의 위치를 비교할 수 있습니다.</p><p>그림만 보면 AdaGrad가 가장 좋아 보입니다. 실제로 이 문제에서는 손실도 가장 빨리 줄어듭니다. 하지만 조심할 점이 세 가지입니다.</p><p>첫째, 네 기법의 학습률이 0.95, 0.1, 1.5, 0.3으로 모두 다릅니다. 각 기법이 잘 보이도록 고른 값이라 완전히 공정한 비교는 아닙니다. 둘째, 경로가 매끄러운 것과 손실이 낮은 것은 다릅니다. 오른쪽 그래프에서 29회 시점의 SGD 손실은 모멘텀이나 Adam보다 낮습니다. 셋째, 교재 표현대로 모든 문제에서 항상 뛰어난 기법은 아직 없습니다. 각자 잘 푸는 문제와 서툰 문제가 있습니다.</p><p>교재는 지금도 많은 연구에서 SGD를 쓰고, 요즘은 Adam을 많이 쓴다고 소개합니다. 책에서는 주로 SGD와 Adam을 사용합니다. 다음 장에서 조건을 바꿔 정말 그런지 확인합니다.</p></aside>
+</section>
+
+<!-- 11b -->
+<section class="slide" data-key="flip" data-title="조건을 바꾸면 순위가 뒤집힌다" aria-label="조건을 바꾼 비교">
+ <div class="eyebrow"><span>07 · 비교</span><span>같은 실험, 조건만 바꾸기</span></div>
+ <h2>조건을 조금만 바꿔도 AdaGrad의 1등은 사라진다</h2>
+ <div class="flip-layout">
+  <div>
+   <div class="bar-title" style="font-size:21px">① 골짜기를 45° 돌리면 <span>모양은 같고 방향만 비스듬히</span></div>
+   <div class="plot flip-plot" id="flip-rot"></div>
+   <div class="flip-legend" id="flip-legend"></div>
+  </div>
+  <div>
+   <div class="bar-title" style="font-size:21px">② 학습률을 모두 η = 0.3으로 맞추면 <span>29회 갱신 후 손실 순위</span></div>
+   <div class="plot flip-plot" id="flip-slope"></div>
+  </div>
+ </div>
+ <p class="flip-claim">AdaGrad는 <b class="c-ada">x축, y축 각각</b>의 보폭을 조절한다 → 이 예제는 가파른 방향이 정확히 y축이라 AdaGrad에 유리했다<br><span>모든 문제에서 항상 뛰어난 기법은 (아직) 없다 · 풀 문제의 모양과 하이퍼파라미터에 따라 결과가 달라진다</span></p>
+ <div class="footer"><span>같은 출발점(회전한 경우는 같이 회전), 29회 갱신 · 숫자는 29회 후 손실</span><span class="page"></span></div>
+ <aside class="notes"><p class="timing">약 2분 · 앞 장의 결론을 직접 확인</p><p>앞 장에서 “그림만 보면 AdaGrad가 이긴 것 같다”고 했는데, 정말 이긴 것인지 조건을 바꿔 확인해 보겠습니다.</p><p>왼쪽은 같은 밥그릇 함수를 45도 돌려놓은 것입니다. 모양은 그대로이고 방향만 비스듬합니다. SGD는 축을 따지지 않으므로 손실이 0.0164로 똑같습니다. 그런데 AdaGrad는 0.0009에서 약 0.155로, 170배 가까이 나빠져서 SGD보다 못해집니다. AdaGrad는 x축, y축 ‘각각’의 보폭을 조절하는데, 가파른 방향이 x와 y에 섞여 있으면 축별로 나눠 조절해도 그 방향만 골라서 줄일 수 없기 때문입니다. 원래 예제는 가파른 방향이 정확히 y축이어서 AdaGrad에게 딱 맞는 문제였던 것입니다.</p><p>오른쪽은 네 기법의 학습률을 모두 0.3으로 맞춘 결과입니다. 교재 설정에서 1등이던 AdaGrad가 꼴찌가 되고, 모멘텀이 1등이 됩니다. 앞 장의 학습률 0.95, 0.1, 1.5, 0.3은 각 기법이 잘 보이도록 따로 고른 값이었습니다. 참고로 SGD의 0.95는 이 함수에서 이론상 최적 학습률 2/(0.1+2) ≈ 0.952와 거의 같아, SGD가 대충 설정되어서 진 것도 아닙니다.</p><p>정리하면 11장의 승부는 문제의 모양과 학습률 설정이 AdaGrad에 맞았을 뿐입니다. 교재 표현대로 모든 문제에서 항상 뛰어난 기법은 아직 없습니다. 실제 신경망은 차원이 매우 많고 학습도 길어서, 기울기 제곱을 계속 더하는 AdaGrad는 갱신이 거의 멈추는 약점도 드러납니다.</p></aside>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-key="mnist" data-title="MNIST로 본 비교" aria-label="MNIST 비교">
+ <div class="eyebrow"><span>08 · 실제 신경망</span><span>교재 6.1.8 · 그림 6-9</span></div>
+ <h2>실제 신경망에서는 SGD가 가장 느리게 학습했다</h2>
+ <p class="subtitle">손글씨 숫자 인식(MNIST) · 층마다 뉴런 100개인 5층 신경망 · 활성화 함수 ReLU · 미니배치 128</p>
+ <div class="mnist-layout">
+  <div class="plot mnist-chart" id="mnist-chart"></div>
+  <div>
+   <div class="bar-title" style="font-size:20px">마지막 100회의 평균 손실 <span>낮을수록 좋다</span></div>
+   <div class="rank" id="rank"></div>
+   <div class="setup">
+    <div><b>기본 학습률</b> · SGD·모멘텀·AdaGrad 0.01, Adam 0.001</div>
+    <div><b>SGD 외 세 기법</b>이 더 빨리 학습했고, 이 실행에서는 AdaGrad가 조금 앞섰다</div>
+    <div>학습률, 층 깊이 같은 <b>구조에 따라 결과가 달라진다</b></div>
+   </div>
+  </div>
+ </div>
+ <div class="controls"><div class="control"><button class="small-btn primary" id="mn-play">학습 재생</button><button class="small-btn" id="mn-reset">처음</button></div><input type="range" id="mn-slider" min="0" max="199" aria-label="학습 반복 횟수"><span class="step-readout" id="mn-count"></span></div>
+ <div class="footer"><span>교재 코드(optimizer_compare_mnist.py)를 그대로 실행한 결과 · 미니배치가 무작위라 실행마다 조금씩 다르다</span><span class="page"></span></div>
+ <aside class="notes"><p class="timing">약 2분 · ‘학습 재생’으로 곡선이 그려지는 모습</p><p>마지막으로 실제 신경망에서 비교합니다. 손글씨 숫자 데이터셋인 MNIST로, 층마다 뉴런이 100개인 5층 신경망을 ReLU 활성화 함수로 2000번 학습시켰습니다. 교재 그림 6-9와 같은 실험을 교재 코드로 직접 돌린 결과입니다.</p><p>SGD의 손실이 가장 느리게 내려갑니다. 나머지 세 기법은 비슷한데, 교재처럼 이번 실행에서도 AdaGrad가 조금 빠릅니다.</p><p>단, 이 결과도 학습률과 신경망 구조에 따라 달라집니다. 일반적으로 SGD보다 다른 세 기법이 빠르게 학습하고, 때로는 최종 정확도도 높게 나타난다는 정도로 정리할 수 있습니다.</p><p>참고: 손실 곡선은 교재 코드의 smooth_curve로 부드럽게 만든 값입니다. 미니배치를 무작위로 뽑으므로 다시 실행하면 곡선 모양이 조금 달라집니다.</p></aside>
+</section>
+
+<!-- 13 -->
+<section class="slide dark closing" data-key="recap" data-title="정리 — 무엇을 기억하는가" aria-label="정리">
+ <div class="eyebrow"><span>RECAP · 06.1</span><span>매개변수 갱신</span></div>
+ <h2>네 가지 갱신 방법은<br>무엇을 기억하는가</h2>
+ <div class="recap">
+  <div class="recap-row"><span class="chip c-sgd"><i></i>SGD</span><p><b>기억 없음</b> · 현재 기울기만 본다<br>비등방성 함수에서 지그재그</p></div>
+  <div class="recap-row"><span class="chip c-mom"><i></i>모멘텀</span><p><b>속도 v</b> · 일정한 방향은 가속, 흔들림은 상쇄</p></div>
+  <div class="recap-row"><span class="chip c-ada"><i></i>AdaGrad</span><p><b>기울기 제곱의 합 h</b> · 매개변수마다 보폭 조절</p></div>
+  <div class="recap-row"><span class="chip c-adam"><i></i>Adam</span><p><b>둘 다</b> · 관성 + 맞춤 보폭</p></div>
+ </div>
+ <div class="plot closing-plot" id="closing-plot"></div>
+ <p class="closing-question">어떻게 걸을지는 정했다. 그렇다면 <span style="color:#f08a5d;font-weight:700">어디서 출발하느냐 — 가중치의 초깃값</span>은 학습에 어떤 영향을 줄까?</p>
+ <div class="footer"><span>다음 · 6.2 가중치의 초깃값</span><span class="page"></span></div>
+ <aside class="notes"><p class="timing">약 1분 · 정리와 다음 절 연결</p><p>오늘 본 네 기법을 “무엇을 기억하는가”로 정리할 수 있습니다. SGD는 아무것도 기억하지 않고 현재 기울기만 봅니다. 모멘텀은 속도를 기억해 일정한 방향으로 가속합니다. AdaGrad는 기울기 제곱의 누적을 기억해 매개변수마다 보폭을 조절합니다. Adam은 둘 다 기억합니다.</p><p>지금까지는 출발점 (−7, 2)를 고정하고 걷는 방법만 바꿨습니다. 그런데 출발점, 즉 가중치의 초깃값을 어떻게 정하느냐도 학습의 성패를 가릅니다. 다음 6.2절에서 이어서 다룹니다.</p></aside>
+</section>
+
+</div></div>
+</main>
+<div class="progress" id="progress"></div><button id="exit-present" aria-label="발표 모드 종료">발표 종료 · F</button>
+<nav id="toolbar" aria-label="슬라이드 조작"><div class="toolbar-group"><button id="toc-btn">목차</button><span class="toolbar-sep"></span><span class="toolbar-hint">← → 이동 &nbsp; · &nbsp; F 전체화면 &nbsp; · &nbsp; N 발표 노트</span></div><div class="toolbar-group"><button class="nav-btn" id="prev" aria-label="이전 슬라이드">‹</button><span id="position" aria-live="polite">01 / 13</span><button class="nav-btn" id="next" aria-label="다음 슬라이드">›</button><span class="toolbar-sep"></span><button id="notes-btn">발표 노트</button><button id="full-btn">전체화면</button></div></nav>
+<div class="overlay" id="toc-overlay" role="dialog" aria-modal="true" aria-label="슬라이드 목차"><div class="modal"><div class="modal-header"><h2>슬라이드 목차</h2><button data-close aria-label="목차 닫기">×</button></div><div id="toc-list"></div></div></div>
+<div class="overlay" id="notes-overlay" role="dialog" aria-modal="true" aria-label="발표 노트"><div class="modal"><div class="modal-header"><h2 id="notes-title">발표 노트</h2><button data-close aria-label="발표 노트 닫기">×</button></div><div id="notes-text"></div></div></div>
+
+<script>
+'use strict';
+const C={ink:'#152c3d',muted:'#687780',line:'#d6dad5',orange:'#e76c36',teal:'#177e81',blue:'#496a8b',paper:'#f5f3ed',sgd:'#e76c36',mom:'#496a8b',ada:'#177e81',adam:'#8a5a8c'};
+const DARK={sgd:'#f08a5d',mom:'#8fb0d1',ada:'#4cbcb7',adam:'#c49bd0'};
+const METHODS=['SGD','Momentum','AdaGrad','Adam'];
+const META={SGD:{lr:.95,key:'sgd',ko:'SGD'},Momentum:{lr:.1,key:'mom',ko:'모멘텀'},AdaGrad:{lr:1.5,key:'ada',ko:'AdaGrad'},Adam:{lr:.3,key:'adam',ko:'Adam'}};
+const MNIST={"SGD":[2.3533,2.283,2.201,2.1154,2.0401,1.9604,1.8297,1.7508,1.6435,1.5315,1.4118,1.3066,1.1847,1.1069,1.0469,0.9423,0.8835,0.8472,0.8187,0.7572,0.7145,0.6802,0.629,0.6346,0.595,0.5711,0.5936,0.5288,0.5657,0.4852,0.5151,0.5047,0.4953,0.4987,0.4713,0.4435,0.4493,0.4438,0.4464,0.4313,0.4215,0.4092,0.391,0.3804,0.3977,0.4108,0.4144,0.4103,0.4148,0.3696,0.4007,0.3446,0.362,0.3053,0.3602,0.3473,0.3494,0.3413,0.3555,0.3664,0.3598,0.3311,0.3551,0.2896,0.3399,0.3205,0.2986,0.3083,0.3221,0.3226,0.3389,0.3254,0.3439,0.3166,0.3109,0.278,0.2696,0.2545,0.2846,0.3047,0.2854,0.2561,0.2785,0.2851,0.3663,0.302,0.287,0.2709,0.2812,0.2925,0.3053,0.2959,0.3085,0.2458,0.2766,0.2844,0.2869,0.2898,0.2665,0.2739,0.2897,0.302,0.2669,0.2286,0.2669,0.2334,0.2583,0.2516,0.2784,0.2385,0.2692,0.2527,0.2925,0.2723,0.2532,0.2271,0.2621,0.2461,0.2483,0.2736,0.2447,0.2701,0.2301,0.2288,0.2222,0.2198,0.2673,0.2455,0.236,0.2597,0.2517,0.2017,0.244,0.2543,0.2233,0.2439,0.2445,0.2629,0.2259,0.243,0.2417,0.2289,0.2424,0.2743,0.2503,0.2341,0.2585,0.2682,0.2172,0.2072,0.2379,0.2184,0.243,0.2153,0.2182,0.2015,0.2363,0.2175,0.2,0.193,0.2235,0.2401,0.2235,0.2374,0.207,0.2255,0.228,0.2294,0.2288,0.2089,0.2187,0.2506,0.2101,0.1764,0.2165,0.2161,0.2042,0.1964,0.187,0.2292,0.2317,0.2055,0.1947,0.1777,0.1983,0.2002,0.2134,0.1916,0.2079,0.2025,0.1964,0.1908,0.1959,0.1837,0.2097,0.1999,0.2092,0.2021,0.2039,0.2443],"Momentum":[2.2889,2.0653,1.6014,0.9887,0.6568,0.5716,0.4622,0.3824,0.3686,0.3654,0.3559,0.3083,0.2773,0.297,0.3279,0.2817,0.2573,0.2548,0.2348,0.2569,0.2522,0.2133,0.2301,0.2231,0.2412,0.2087,0.2287,0.2114,0.2324,0.2005,0.198,0.2201,0.2047,0.2031,0.1776,0.1865,0.1851,0.1913,0.1909,0.1772,0.1861,0.1701,0.152,0.175,0.1541,0.1975,0.1548,0.174,0.1885,0.1546,0.1585,0.1494,0.1689,0.1212,0.1495,0.1468,0.1479,0.1411,0.1455,0.1418,0.1544,0.1443,0.1669,0.1078,0.1518,0.1259,0.1104,0.114,0.1176,0.1448,0.1403,0.1299,0.1531,0.1291,0.1379,0.1024,0.0837,0.0963,0.1066,0.1327,0.1071,0.0904,0.1061,0.1265,0.1443,0.1091,0.1086,0.1035,0.1242,0.1054,0.117,0.1092,0.1154,0.1024,0.1051,0.1143,0.1138,0.1102,0.0975,0.0868,0.0943,0.1156,0.0895,0.0774,0.1166,0.0851,0.1045,0.0939,0.0989,0.0861,0.0931,0.0917,0.1273,0.0912,0.0872,0.0918,0.0866,0.0995,0.0821,0.1086,0.1019,0.0935,0.0796,0.0822,0.0799,0.077,0.1123,0.0837,0.0899,0.0963,0.0904,0.0813,0.0973,0.0957,0.0854,0.0613,0.089,0.0941,0.0855,0.0902,0.074,0.1035,0.0944,0.1006,0.123,0.0836,0.1013,0.0952,0.0706,0.079,0.0815,0.0804,0.0854,0.0674,0.0798,0.0664,0.0821,0.069,0.0668,0.064,0.0587,0.0867,0.0702,0.0816,0.0596,0.0806,0.0635,0.0849,0.0546,0.0586,0.0686,0.0644,0.0697,0.0506,0.0736,0.085,0.0637,0.0714,0.0538,0.0576,0.0819,0.0843,0.0627,0.0456,0.0534,0.0509,0.0543,0.0639,0.0583,0.0637,0.07,0.0645,0.0591,0.0605,0.0774,0.05,0.0602,0.0723,0.0725,0.079],"AdaGrad":[1.7029,0.8931,0.4545,0.3712,0.2645,0.2345,0.1871,0.1697,0.1709,0.1738,0.1666,0.1499,0.1272,0.1274,0.1494,0.1215,0.1217,0.1236,0.1041,0.1193,0.1086,0.0952,0.1072,0.1067,0.1052,0.0901,0.0919,0.0856,0.1148,0.0834,0.1001,0.1094,0.0898,0.1034,0.0877,0.0761,0.0878,0.0842,0.0856,0.0866,0.0774,0.0785,0.0807,0.0859,0.0699,0.1022,0.0724,0.0813,0.0953,0.0704,0.0735,0.0705,0.0725,0.0561,0.072,0.0618,0.0572,0.0602,0.06,0.0749,0.0787,0.0614,0.0841,0.0427,0.0664,0.0562,0.0598,0.0584,0.0526,0.0645,0.0702,0.0706,0.0722,0.0643,0.0711,0.0465,0.038,0.0452,0.0531,0.0582,0.0534,0.0433,0.0442,0.0506,0.0709,0.0443,0.0497,0.0543,0.0673,0.0493,0.0517,0.0506,0.0516,0.0425,0.0504,0.0548,0.0467,0.0533,0.0515,0.0422,0.0477,0.0623,0.044,0.0343,0.0464,0.0348,0.0473,0.0449,0.0602,0.0342,0.0427,0.043,0.0585,0.0435,0.0423,0.0394,0.0408,0.0434,0.0434,0.0508,0.0461,0.0468,0.0327,0.035,0.0332,0.0364,0.0472,0.0439,0.0392,0.0441,0.0414,0.0352,0.0409,0.0546,0.0397,0.029,0.0482,0.0485,0.0435,0.0375,0.0396,0.0443,0.0399,0.0477,0.0571,0.0404,0.0436,0.05,0.0358,0.0321,0.0347,0.0328,0.0425,0.0294,0.0436,0.0309,0.0338,0.0327,0.0282,0.0262,0.0243,0.0444,0.0324,0.0317,0.0237,0.0447,0.0293,0.0475,0.0326,0.0265,0.0421,0.0409,0.0307,0.0203,0.037,0.0319,0.0303,0.0311,0.0293,0.0312,0.0391,0.0352,0.0335,0.022,0.0275,0.0301,0.0235,0.028,0.0222,0.0319,0.0338,0.0316,0.0302,0.0279,0.0374,0.0304,0.0365,0.0276,0.0348,0.0387],"Adam":[2.0886,1.4921,0.7963,0.4951,0.4183,0.3809,0.3171,0.3006,0.3054,0.2898,0.2788,0.2412,0.2255,0.2432,0.2626,0.2136,0.2068,0.2136,0.1909,0.2005,0.1822,0.1589,0.1774,0.1855,0.1751,0.1525,0.1652,0.1636,0.1852,0.1438,0.1526,0.164,0.1687,0.1717,0.1589,0.134,0.1444,0.1514,0.131,0.1502,0.1357,0.1363,0.1079,0.1333,0.1019,0.1467,0.1058,0.1352,0.1339,0.1079,0.1223,0.1102,0.1053,0.0902,0.1037,0.1084,0.1059,0.0975,0.1077,0.1103,0.1225,0.1107,0.1189,0.075,0.1059,0.0899,0.0869,0.0848,0.0883,0.0964,0.0978,0.1015,0.0991,0.1042,0.0999,0.066,0.0602,0.0642,0.0779,0.0923,0.0829,0.0671,0.0667,0.0852,0.0985,0.0742,0.0667,0.0633,0.0858,0.0702,0.0716,0.0763,0.0787,0.0832,0.0642,0.0664,0.067,0.0768,0.0601,0.0626,0.0571,0.0861,0.064,0.0624,0.0843,0.0503,0.0807,0.0654,0.0611,0.0532,0.0605,0.0654,0.0849,0.0694,0.0602,0.06,0.0616,0.0611,0.0621,0.0834,0.072,0.0677,0.0484,0.0557,0.0531,0.0462,0.0892,0.0634,0.0582,0.0521,0.0475,0.045,0.055,0.0654,0.0544,0.0363,0.06,0.0546,0.0579,0.0548,0.0474,0.0569,0.0489,0.0547,0.0779,0.0561,0.064,0.0499,0.0333,0.0477,0.0446,0.0501,0.058,0.0427,0.0585,0.0405,0.0418,0.0426,0.035,0.0329,0.0352,0.0462,0.0483,0.0532,0.0325,0.0547,0.04,0.048,0.0368,0.0297,0.0481,0.0386,0.0449,0.0377,0.0536,0.0648,0.0458,0.0394,0.0358,0.034,0.0475,0.0476,0.0358,0.0285,0.0348,0.0271,0.0271,0.0437,0.0291,0.043,0.0398,0.041,0.0346,0.0341,0.0464,0.0331,0.0414,0.0421,0.0407,0.0435],"raw_last100_mean":{"SGD":0.2055905435855427,"Momentum":0.0658944074588731,"AdaGrad":0.03206982159726004,"Adam":0.04051095786675632}};
+const $=id=>document.getElementById(id);
+const pad=n=>String(n).padStart(2,'0');
+const fmt=(v,d=2)=>{if(Math.abs(v)<.5*10**(-d))v=0;return v.toFixed(d).replace('-','−')};
+const esc=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+const ptsPath=p=>p.map((v,i)=>(i?'L':'M')+v.map(n=>Number(n).toFixed(2)).join(',')).join(' ');
+const FONT='Pretendard,Noto Sans KR,Malgun Gothic,Segoe UI,sans-serif';
+function txt(x,y,s,size=18,color=C.muted,anchor='start',extra=''){return `<text x="${x}" y="${y}" fill="${color}" font-size="${size}" text-anchor="${anchor}" font-family="${FONT}" ${extra}>${esc(s)}</text>`}
+function dot(x,y,r=5,color=C.orange,extra=''){return `<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" ${extra}/>`}
+function line(x1,y1,x2,y2,color=C.line,width=1,extra=''){return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${width}" ${extra}/>`}
+function arrow(x1,y1,x2,y2,color=C.orange,width=2.5,head=10,extra=''){let d=Math.hypot(x2-x1,y2-y1);if(d<2)return '';let a=Math.atan2(y2-y1,x2-x1),l=Math.min(head,d*.45),w=l*.55;let bx=x2-l*.8*Math.cos(a),by=y2-l*.8*Math.sin(a);return `<g ${extra}>`+line(x1,y1,bx,by,color,width)+`<path d="M${x2},${y2} L${x2-l*Math.cos(a)+w*Math.sin(a)},${y2-l*Math.sin(a)-w*Math.cos(a)} L${x2-l*Math.cos(a)-w*Math.sin(a)},${y2-l*Math.sin(a)+w*Math.cos(a)} Z" fill="${color}"/></g>`}
+let svgCounter=0;
+function graph(el,W,H,o){const m={l:59,r:25,t:30,b:51,...o.m},p={x:m.l,y:m.t,w:W-m.l-m.r,h:H-m.t-m.b};const X=x=>p.x+(x-o.xmin)/(o.xmax-o.xmin)*p.w,Y=y=>p.y+p.h-(y-o.ymin)/(o.ymax-o.ymin)*p.h;const ix=px=>o.xmin+(px-p.x)/p.w*(o.xmax-o.xmin),iy=py=>o.ymin+(p.y+p.h-py)/p.h*(o.ymax-o.ymin);const clip='clip-'+(++svgCounter);let a=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.label||'')}"><defs><clipPath id="${clip}"><rect x="${p.x-1}" y="${p.y-1}" width="${p.w+2}" height="${p.h+2}"/></clipPath>${o.defs||''}</defs>`;return {el,W,H,p,X,Y,ix,iy,clip,o,add:s=>a+=s,finish(){el.innerHTML=a+'</svg>'}}}
+function axes(g,{xticks=[],yticks=[],xlabel='',ylabel='',grid=true,dark=false,ytf=v=>String(v).replace('-','−'),xtf=v=>String(v).replace('-','−')}={}){let {X,Y,p}=g;const col=dark?'#4a6372':C.line,mut=dark?'#a6bbc3':C.muted;for(let v of xticks){if(grid)g.add(line(X(v),p.y,X(v),p.y+p.h,col,1,'opacity=".55"'));g.add(txt(X(v),p.y+p.h+26,xtf(v),16,mut,'middle'))}for(let v of yticks){if(grid)g.add(line(p.x,Y(v),p.x+p.w,Y(v),col,1,'opacity=".55"'));g.add(txt(p.x-11,Y(v)+5,ytf(v),16,mut,'end'))}g.add(line(p.x,p.y+p.h,p.x+p.w,p.y+p.h,col,1.3));g.add(line(p.x,p.y,p.x,p.y+p.h,col,1.3));if(xlabel)g.add(txt(p.x+p.w,p.y+p.h+46,xlabel,17,mut,'end'));if(ylabel)g.add(txt(p.x,p.y-12,ylabel,17,mut));}
+
+// ---------- the textbook problem and optimizers (common/optimizer.py, same order of operations) ----------
+const F=(x,y)=>x*x/20+y*y, G=(x,y)=>[x/10,2*y];
+function simulate(name,steps=29,o={}){const lr=o.lr??META[name].lr,Gf=o.grad||G,Ff=o.f||F;let p=o.start?[...o.start]:[-7,2],v=[0,0],h=[0,0],m=[0,0],s=[0,0],it=0;const out=[{x:p[0],y:p[1],f:Ff(...p),v:[0,0],h:[0,0]}];
+ for(let t=0;t<steps;t++){const g=Gf(...p);
+  for(let k=0;k<2;k++){
+   if(name==='SGD')p[k]-=lr*g[k];
+   else if(name==='Momentum'){v[k]=.9*v[k]-lr*g[k];p[k]+=v[k]}
+   else if(name==='AdaGrad'){h[k]+=g[k]*g[k];p[k]-=lr*g[k]/(Math.sqrt(h[k])+1e-7)}
+  }
+  if(name==='Adam'){it++;const lrt=lr*Math.sqrt(1-.999**it)/(1-.9**it);for(let k=0;k<2;k++){m[k]+=(1-.9)*(g[k]-m[k]);s[k]+=(1-.999)*(g[k]*g[k]-s[k]);const d=lrt*m[k]/(Math.sqrt(s[k])+1e-7);v[k]=-d;p[k]-=d}}
+  out.push({x:p[0],y:p[1],f:Ff(...p),v:[...v],h:[...h]})}
+ return out}
+const HIST={};METHODS.forEach(n=>HIST[n]=simulate(n));
+const signChanges=h=>h.slice(1).reduce((c,o,i)=>c+(o.y*h[i].y<0?1:0),0);
+const ZOOM={xmin:-8.6,xmax:1.9,ymin:-2.6,ymax:2.6,xticks:[-8,-6,-4,-2,0],yticks:[-2,0,2]};
+const LEVELS=[.06,.2,.45,.8,1.3,2,2.9,4,5.4,7];
+
+// contour plot of f with optional paths, quiver field and overlays. Axis scale is equal, so angles on screen are true.
+function field(el,W,H,o={}){let {rot=0,xmin=-10,xmax=10,ymin=-4,ymax=4,labels=true,dark=false,levels=LEVELS,paths=[],quiver=false,minLabel=false,startLabel=true,extra=null,xticks=[-10,-5,0,5,10],yticks=null}=o;
+ const m=labels?{l:50,r:16,t:30,b:50}:{l:8,r:8,t:8,b:8};const pw=W-m.l-m.r,ph=H-m.t-m.b,aspect=pw/ph;let sx=xmax-xmin,sy=ymax-ymin;
+ if(sx/sy<aspect){let mid=(xmax+xmin)/2;sx=sy*aspect;xmin=mid-sx/2;xmax=mid+sx/2}else{let mid=(ymax+ymin)/2;sy=sx/aspect;ymin=mid-sy/2;ymax=mid+sy/2}
+ const g=graph(el,W,H,{xmin,xmax,ymin,ymax,m,label:o.label||'f(x,y)=x²/20+y² 의 등고선과 갱신 경로'});
+ const col=dark?'#3f5867':'#b3c2bd';
+ if(labels){if(!yticks){let t=Math.floor(ymax);yticks=t>=4?[-4,-2,0,2,4]:[-2,0,2]}axes(g,{xticks,yticks,xlabel:'x',ylabel:'y',grid:false,dark})}
+ g.add(`<g clip-path="url(#${g.clip})">`);
+ for(const c of levels)g.add(`<ellipse cx="${g.X(0)}" cy="${g.Y(0)}" rx="${Math.sqrt(20*c)/(xmax-xmin)*g.p.w}" ry="${Math.sqrt(c)/(ymax-ymin)*g.p.h}" fill="none" stroke="${col}" stroke-width="1.2" ${c<.3?'opacity=".6"':''} ${rot?`transform="rotate(${-rot} ${g.X(0)} ${g.Y(0)})"`:''}/>`);
+ g.add(line(g.X(0),g.p.y,g.X(0),g.p.y+g.p.h,col,1,'stroke-dasharray="3 7" opacity=".5"'));g.add(line(g.p.x,g.Y(0),g.p.x+g.p.w,g.Y(0),col,1,'stroke-dasharray="3 7" opacity=".5"'));
+ if(quiver){for(let x=-9;x<=9.01;x+=1.5)for(let y=Math.ceil(ymin*2)/2;y<=ymax;y+=.75){if(Math.abs(y)<.01&&Math.abs(x)<.01)continue;const gr=G(x,y),n=Math.hypot(...gr);if(n<1e-9)continue;const L=Math.min(30,9+8*Math.sqrt(n));const ux=-gr[0]/n,uy=-gr[1]/n;g.add(arrow(g.X(x),g.Y(y),g.X(x)+ux*L,g.Y(y)-uy*L,'#9fb1ac',1.5,7))}}
+ for(const P of paths){const h=P.h,upto=P.upto??h.length-1,color=P.color,pts=h.slice(0,upto+1).map(o=>[g.X(o.x),g.Y(o.y)]);
+  if(P.faint){g.add(`<path d="${ptsPath(h.map(o=>[g.X(o.x),g.Y(o.y)]))}" fill="none" stroke="${color}" stroke-width="2" stroke-dasharray="4 6" opacity=".55" stroke-linejoin="round"/>`);continue}
+  if(P.ghost)g.add(`<path d="${ptsPath(h.map(o=>[g.X(o.x),g.Y(o.y)]))}" fill="none" stroke="${color}" stroke-width="1.5" opacity=".14" stroke-linejoin="round"/>`);
+  if(pts.length>1)g.add(`<path class="trace" d="${ptsPath(pts)}" fill="none" stroke="${color}" stroke-width="${P.width||(W>600?3:2.4)}" stroke-linejoin="round" stroke-linecap="round"/>`);
+  if(P.dots!==false)pts.forEach((p,i)=>{const last=i===pts.length-1;g.add(dot(p[0],p[1],last?(W>600?7:5.5):(W>600?3.4:2.6),color,`stroke="${dark?C.ink:C.paper}" stroke-width="${last?2:1}" class="pdot"`))});
+  if(P.vel&&upto>0){const o=h[upto],k=P.vel;g.add(arrow(g.X(o.x),g.Y(o.y),g.X(o.x+o.v[0]*k),g.Y(o.y+o.v[1]*k),C.orange,2.6,11))}
+  if(startLabel&&P.start!==false){const p=[g.X(h[0].x),g.Y(h[0].y)];g.add(txt(p[0]-14,p[1]+5,'시작 (−7, 2)',W>600?16:13,dark?'#a6bbc3':C.muted,'end'))}}
+ g.add(`<circle cx="${g.X(0)}" cy="${g.Y(0)}" r="${W>600?6:4.5}" fill="${dark?C.ink:C.paper}" stroke="${dark?'#e9eef0':C.ink}" stroke-width="2.2"/>`);
+ if(minLabel)g.add(txt(g.X(0)+12,g.Y(0)+24,'최솟값',W>600?16:13,dark?'#c7d5d9':C.ink));
+ if(extra)extra(g);
+ g.add('</g>');g.finish();return g}
+
+// multi-series line chart. ghost = whole series faint, solid up to `upto`.
+function lines(el,W,H,series,o={}){const {xmax,ymin=0,ymax,upto=Infinity,xticks=[],yticks=[],ytf,xtf,xlabel='',ylabel='',log=false,m={l:58,r:20,t:26,b:46},xs=i=>i,zero=false,dashes={}}=o;
+ const tr=v=>log?Math.log10(Math.max(v,1e-12)):v;const g=graph(el,W,H,{xmin:0,xmax,ymin,ymax,m,label:o.label||'갱신 횟수에 따른 값'});
+ axes(g,{xticks,yticks,xlabel,ylabel,ytf,xtf,grid:true});if(zero)g.add(line(g.p.x,g.Y(0),g.p.x+g.p.w,g.Y(0),'#9aa9a6',1.2));
+ g.add(`<g clip-path="url(#${g.clip})">`);
+ for(const s of series){const all=s.vals.map((v,i)=>[g.X(xs(i)),g.Y(tr(v))]);g.add(`<path d="${ptsPath(all)}" fill="none" stroke="${s.color}" stroke-width="${s.w||2.6}" opacity=".16" ${s.dash?`stroke-dasharray="${s.dash}"`:''}/>`);
+  const vis=all.slice(0,Math.min(upto,all.length-1)+1);if(vis.length>1)g.add(`<path d="${ptsPath(vis)}" fill="none" stroke="${s.color}" stroke-width="${s.w||2.6}" stroke-linejoin="round" ${s.dash?`stroke-dasharray="${s.dash}"`:''}/>`);
+  if(vis.length&&s.dot!==false)g.add(dot(...vis[vis.length-1],4.5,s.color,`stroke="${C.paper}" stroke-width="1.5"`));
+  if(s.label){const p=vis[vis.length-1];g.add(txt(p[0]+(s.lx||8),p[1]+(s.ly||5),s.label,s.ls||15,s.color,'start','font-weight="700"'))}}
+ g.add('</g>');g.finish();return g}
+
+// signed bar chart for velocities
+function bars(el,W,H,vals,{upto,color,ymin,ymax,yticks}){const g=graph(el,W,H,{xmin:.4,xmax:vals.length-.4,ymin,ymax,m:{l:58,r:14,t:12,b:34},label:'갱신마다의 속도'});
+ axes(g,{xticks:[1,10,20,29],yticks,grid:true,ytf:v=>fmt(v,1)});g.add(line(g.p.x,g.Y(0),g.p.x+g.p.w,g.Y(0),'#8c9b98',1.4));
+ const bw=g.p.w/vals.length*.62;vals.forEach((v,i)=>{if(i===0)return;const x=g.X(i)-bw/2,y0=g.Y(0),y1=g.Y(v);const on=i<=upto;g.add(`<rect x="${x}" y="${Math.min(y0,y1)}" width="${bw}" height="${Math.max(1,Math.abs(y1-y0))}" fill="${color}" opacity="${on?(i===upto?1:.75):.12}" rx="2"/>`)});
+ if(upto>0){const v=vals[upto];g.add(txt(g.X(upto),v>=0?g.Y(v)-8:g.Y(v)+20,fmt(v,2),15,C.ink,'middle','font-weight="700"'))}
+ g.finish()}
+
+// ---------- players ----------
+const players=[];
+function player(prefix,max,render,{min=0,delay=190,init=max}={}){const P={cur:init,timer:null};const btn=$(prefix+'-play'),sl=$(prefix+'-slider'),cnt=$(prefix+'-count'),label=btn?btn.textContent:'';
+ P.set=i=>{P.cur=Math.max(min,Math.min(max,i));render(P.cur);if(sl)sl.value=P.cur;};
+ P.stop=()=>{clearInterval(P.timer);P.timer=null;if(btn)btn.textContent=label};
+ P.play=()=>{if(P.timer){P.stop();return}if(P.cur>=max)P.set(min);btn.textContent='정지';P.timer=setInterval(()=>{if(P.cur>=max)P.stop();else P.set(P.cur+1)},delay)};
+ if(btn)btn.onclick=P.play;if($(prefix+'-step'))$(prefix+'-step').onclick=()=>{P.stop();P.set(P.cur+1)};if($(prefix+'-reset'))$(prefix+'-reset').onclick=()=>{P.stop();P.set(min)};if(sl)sl.oninput=()=>{P.stop();P.set(Number(sl.value))};
+ P.count=s=>{if(cnt)cnt.textContent=s};players.push(P);return P}
+const stopAll=()=>players.forEach(p=>p.stop());
+
+// ---------- 01 cover ----------
+function cover(){field($('cover-plot'),905,600,{labels:false,xmin:-9.5,xmax:9.5,ymin:-3.2,ymax:3.2,startLabel:false,paths:METHODS.map(n=>({h:HIST[n],color:C[META[n].key],width:3.4,start:false})),extra:g=>{g.add(txt(g.X(-7)-12,g.Y(2)-16,'시작',16,C.muted,'middle'));g.add(txt(g.X(0)+14,g.Y(0)+30,'최솟값',16,C.ink))}})}
+
+// ---------- 02 terrain ----------
+const T=x=>5-1.7*Math.exp(-(((x-2.7)/.75)**2))-3.1*Math.exp(-(((x-7.5)/.85)**2))-.8*Math.exp(-(((x-5.1)/.45)**2))+.18*Math.sin(2.7*x)+.06*(x-5)**2;
+const dT=x=>(T(x+1e-4)-T(x-1e-4))/2e-4;
+const walk=[.5];for(let i=0;i<10;i++)walk.push(walk[i]-.22*dT(walk[i]));
+let tStep=0,tFog=true;
+function terrain(){const W=1448,H=330,X=x=>(x+.7)/10.7*W,Y=t=>H-12-(t-2.1)/(6.9-2.1)*(H-40);
+ let pts=[];for(let i=0;i<=428;i++){const x=-.7+i/40;pts.push([X(x),Y(T(x))])}
+ const cx=walk[tStep],px=X(cx),py=Y(T(cx));
+ let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="안개 낀 산맥과 눈을 가린 모험가"><defs><linearGradient id="earth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfd9d3"/><stop offset="1" stop-color="#eef0ea"/></linearGradient><radialGradient id="fogG"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="fogM"><rect x="0" y="-40" width="${W}" height="${H+60}" fill="#fff" opacity=".2"/><ellipse cx="${px}" cy="${py}" rx="190" ry="210" fill="url(#fogG)"/></mask></defs>`;
+ s+=`<g ${tFog?'mask="url(#fogM)"':''}><path d="${ptsPath(pts)} L${W},${H} L0,${H} Z" fill="url(#earth)"/><path d="${ptsPath(pts)}" fill="none" stroke="${C.ink}" stroke-width="2.4"/>`;
+ // footprints
+ for(let i=0;i<tStep;i++)s+=dot(X(walk[i]),Y(T(walk[i])),4,'#b7a494');
+ s+='</g>';
+ const gx=X(7.45),gy=Y(T(7.45));
+ if(!tFog){s+=dot(gx,gy,7,C.teal,`stroke="${C.paper}" stroke-width="2"`)+txt(gx,gy+34,'가장 깊은 골짜기',19,C.teal,'middle','font-weight="700"');if(tStep>=9)s+=txt(px,py+36,'모험가가 멈춘 곳',18,C.orange,'middle','font-weight="700"')}
+ else s+=txt(X(7.4),Y(5.4),'? 가장 깊은 곳은 보이지 않는다',20,'#9aa6a7','middle');
+ // tangent at feet
+ const sl=dT(cx)*((H-40)/(6.9-2.1))/(W/10),ang=Math.atan(-sl);const L=78;s+=line(px-L*Math.cos(ang),py-L*Math.sin(ang),px+L*Math.cos(ang),py+L*Math.sin(ang),C.orange,3,'stroke-linecap="round"');
+ if(Math.abs(dT(cx))>.08){const dir=-Math.sign(dT(cx));s+=arrow(px+dir*20*Math.cos(ang),py+dir*20*Math.sin(ang)+16,px+dir*96*Math.cos(ang),py+dir*96*Math.sin(ang)+16,C.orange,3,12);const tx=px+dir*96*Math.cos(ang),ty=py+dir*96*Math.sin(ang)+16;s+=txt(tx+dir*14,ty-22,'발밑 기울기 → 내려가는 쪽',17,C.orange,dir>0?'start':'end','font-weight="600"')}
+ else s+=txt(px+28,py-104,'기울기 ≈ 0 · 더 내려갈 곳이 느껴지지 않는다',17,C.orange,'start','font-weight="600"');
+ // adventurer
+ const by=py-4;s+=`<g stroke="${C.ink}" stroke-width="3.2" stroke-linecap="round" fill="none"><path d="M${px},${by-46} L${px},${by-18} M${px},${by-18} L${px-9},${by} M${px},${by-18} L${px+9},${by} M${px},${by-38} L${px-12},${by-26} M${px},${by-38} L${px+12},${by-26}"/></g>`+`<circle cx="${px}" cy="${by-58}" r="11" fill="${C.paper}" stroke="${C.ink}" stroke-width="3"/>`+`<rect x="${px-13}" y="${by-62}" width="26" height="6" rx="2" fill="${C.orange}"/>`;
+ s+='</svg>';$('terrain').innerHTML=s;$('t-count').textContent='걸음 '+pad(tStep);$('t-fog').textContent=tFog?'안개 걷기':'안개 덮기';$('t-fog').classList.toggle('on',!tFog)}
+$('t-step').onclick=()=>{if(tStep<walk.length-1){tStep++;terrain()}};$('t-reset').onclick=()=>{tStep=0;tFog=true;terrain()};$('t-fog').onclick=()=>{tFog=!tFog;terrain()};
+
+// ---------- 03 SGD code ----------
+const sgdCode=[
+ '<span class="kw">class</span> <span class="fn">SGD</span>:',
+ '    <span class="kw">def</span> <span class="fn">__init__</span>(self, lr=<span class="str">0.01</span>):',
+ '        self.lr = lr',
+ '',
+ '    <span class="kw">def</span> <span class="fn">update</span>(self, params, grads):',
+ '        <span class="kw">for</span> key <span class="kw">in</span> params.keys():',
+ '            params[key] -= self.lr * grads[key]',
+ '',
+ 'network = TwoLayerNet(...)',
+ '@OPT@',
+ '<span class="kw">for</span> i <span class="kw">in</span> range(<span class="str">10000</span>):',
+ '    x_batch, t_batch = get_mini_batch(...)  <span class="cm"># 미니배치</span>',
+ '    grads = network.gradient(x_batch, t_batch)',
+ '    params = network.params',
+ '    optimizer.update(params, grads)'];
+const stages=[{lines:[3],text:'<strong>01</strong> · 학습률 lr을 인스턴스 변수로 기억해 둔다'},{lines:[7],text:'<strong>02</strong> · 식 6.1 그대로: 매개변수마다 lr × 기울기를 뺀다'},{lines:[10,15],text:'<strong>03</strong> · 반복문은 optimizer.update만 부른다 → 갈아 끼우기 쉽다'}];
+let stage=0,opt='SGD';
+function renderCode(){const focus=stages[stage].lines;$('sgd-code').innerHTML=sgdCode.map((l,i)=>{let s=l.replace('@OPT@',`optimizer = <span class="swap">${opt==='SGD'?'SGD':opt}</span>()`);return `<span class="code-line ${focus.includes(i+1)?'focus':''}"><span class="ln">${i+1}</span>${s||' '}</span>`}).join('');$('code-stage-text').innerHTML=stages[stage].text;
+ $('swap-chips').innerHTML=METHODS.map(n=>`<button class="c-${META[n].key} ${n===opt?'sel':''}" data-opt="${n}"><span>${n}()</span></button>`).join('');document.querySelectorAll('[data-opt]').forEach(b=>b.onclick=()=>{opt=b.dataset.opt;stage=2;renderCode()})}
+$('code-next').onclick=()=>{stage=(stage+1)%stages.length;renderCode()};
+
+// ---------- 04 anisotropy ----------
+let aniPt=[-7,2],aniG=null;
+function aniso(){const [x,y]=aniPt;const gr=G(x,y),d=[-gr[0],-gr[1]],to=[-x,-y];const dn=Math.hypot(...d),tn=Math.hypot(...to);let ang=dn&&tn?Math.acos(Math.max(-1,Math.min(1,(d[0]*to[0]+d[1]*to[1])/(dn*tn))))*180/Math.PI:0;
+ aniG=field($('aniso-plot'),900,500,{quiver:true,startLabel:false,minLabel:true,extra:g=>{const px=g.X(x),py=g.Y(y);
+  g.add(`<line x1="${px}" y1="${py}" x2="${g.X(0)}" y2="${g.Y(0)}" stroke="${C.teal}" stroke-width="2.4" stroke-dasharray="7 6"/>`);
+  const L=150;const ux=d[0]/dn,uy=d[1]/dn;g.add(arrow(px,py,px+ux*L,py-uy*L,C.orange,4,16));
+  // angle arc
+  const a1=Math.atan2(-uy,ux),a2=Math.atan2(-(to[1]/tn),to[0]/tn),r=56;let da=a2-a1;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;
+  g.add(`<path d="M${px+r*Math.cos(a1)},${py+r*Math.sin(a1)} A${r},${r} 0 0 ${da>0?1:0} ${px+r*Math.cos(a2)},${py+r*Math.sin(a2)}" fill="none" stroke="${C.ink}" stroke-width="1.8"/>`);
+  const am=a1+da/2;g.add(txt(px+(r+24)*Math.cos(am),py+(r+24)*Math.sin(am)+6,Math.round(ang)+'°',19,C.ink,'middle','font-weight="700"'));
+  g.add(dot(px,py,8,C.ink,`stroke="${C.paper}" stroke-width="2.5"`));}});
+ $('aniso-read').innerHTML=`<span>현재 위치</span><span class="math">(${fmt(x,1)}, ${fmt(y,1)})</span><span>기울기 ∇f</span><span class="math">(${fmt(gr[0],2)}, ${fmt(gr[1],2)})</span><span>y 성분 / x 성분</span><span class="math">${Math.abs(gr[0])>1e-9?fmt(Math.abs(gr[1]/gr[0]),1)+' 배':'—'}</span>`;
+ $('aniso-angle').textContent=Math.round(ang)+'°';uprightOps($('aniso-read'));}
+$('aniso-plot').addEventListener('click',e=>{const svg=$('aniso-plot').querySelector('svg');const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(svg.getScreenCTM().inverse());let x=aniG.ix(q.x),y=aniG.iy(q.y);if(Math.abs(x)>10.3||Math.abs(y)>aniG.o.ymax)return;aniPt=[Math.round(x*10)/10,Math.round(y*10)/10];aniso()});
+$('aniso-preset').innerHTML=[[-7,2],[5,-2],[-9,.4],[2,3]].map(p=>`<button class="small-btn" data-p="${p}">(${p.map(v=>fmt(v,v%1?1:0)).join(', ')})</button>`).join('');document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{aniPt=b.dataset.p.split(',').map(Number);aniso()});
+
+// ---------- 05 SGD zigzag ----------
+const sgdP=player('sgd',29,i=>{const h=HIST.SGD;field($('sgd-plot'),900,500,{paths:[{h,upto:i,color:C.sgd,ghost:true}],minLabel:true,...ZOOM});
+ lines($('sgd-y'),500,118,[{vals:h.map(o=>o.y),color:C.sgd,w:2.2}],{xmax:29,ymin:-2.2,ymax:2.2,upto:i,yticks:[-2,0,2],zero:true,m:{l:44,r:10,t:8,b:22},label:'y의 변화'});
+ lines($('sgd-x'),500,118,[{vals:h.map(o=>o.x),color:C.blue,w:2.2}],{xmax:29,ymin:-7.5,ymax:.5,upto:i,yticks:[-6,-3,0],zero:true,m:{l:44,r:10,t:8,b:22},label:'x의 변화'});
+ $('sgd-count').textContent=`${pad(i)} / 29 · (${fmt(h[i].x)}, ${fmt(h[i].y)}) · f = ${fmt(h[i].f,3)}`});
+
+// ---------- 06 momentum concept ----------
+const velP=player('vel',29,i=>{const h=HIST.Momentum;const vx=h.map(o=>o.v[0]),vy=h.map(o=>o.v[1]);const mx=Math.max(...vx.map(Math.abs)),my=Math.max(...vy.map(Math.abs));
+ bars($('vx-bars'),750,205,vx,{upto:i,color:C.mom,ymin:-.1,ymax:Math.ceil(mx*12)/10,yticks:[0,Math.ceil(mx*10)/10]});
+ bars($('vy-bars'),750,205,vy,{upto:i,color:C.mom,ymin:-Math.ceil(my*10)/10,ymax:Math.ceil(my*10)/10,yticks:[-Math.ceil(my*10)/10,0,Math.ceil(my*10)/10]});
+ $('vel-count').textContent=`${pad(i)} / 29`});
+let bowlRAF=null,bowlState=null;
+function bowlFrame(){const W=640,H=210,s=bowlState;s.f++;s.v=.985*s.v-.0024*s.u;s.u+=s.v;s.trail.push(s.u);if(s.trail.length>26)s.trail.shift();if(s.f>420){s.u=-1.05;s.v=0;s.f=0;s.trail=[]}
+ const X=u=>W/2+u*250,Y=u=>30+(1.3225-u*u)*110;let p=[];for(let i=0;i<=120;i++){const u=-1.15+2.3*i/120;p.push([X(u),Y(u)])}
+ let a=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="그릇 안을 구르는 공"><path d="${ptsPath(p)}" fill="none" stroke="${C.ink}" stroke-width="2.6"/>`;
+ s.trail.forEach((u,i)=>a+=dot(X(u),Y(u)-13,3,C.mom,`opacity="${(i/s.trail.length)*.45}"`));
+ const bx=X(s.u),by=Y(s.u)-13;a+=arrow(bx,by,bx+s.v*250*9,by+(Y(s.u+s.v*9)-Y(s.u)),C.orange,2.6,10);a+=`<circle cx="${bx}" cy="${by}" r="13" fill="${C.mom}" stroke="${C.paper}" stroke-width="2"/>`;
+ a+=txt(W/2,H-6,'공은 바닥을 지나쳤다가, 마찰(α) 때문에 점점 멈춘다',16,C.muted,'middle');a+=txt(X(s.u)+(s.v>0?24:-24),by-18,'v',18,C.orange,'middle','font-style="italic" font-weight="700"');
+ $('bowl').innerHTML=a+'</svg>';bowlRAF=requestAnimationFrame(bowlFrame)}
+function startBowl(){stopBowl();bowlState={u:-1.05,v:0,f:0,trail:[]};bowlFrame()}function stopBowl(){if(bowlRAF)cancelAnimationFrame(bowlRAF);bowlRAF=null}
+
+// ---------- 06b momentum unrolled ----------
+function momx(){const h=HIST.Momentum;let rows='<tr><th>단계</th><th>기울기 g</th><th>관성 0.9v</th><th>이번 힘 −ηg</th><th>새 속도 v</th><th>새 y</th></tr>';
+ for(let t=1;t<=6;t++){const g=2*h[t-1].y,inert=.9*h[t-1].v[1],force=-.1*g,v=h[t].v[1],y=h[t].y;rows+=`<tr class="${t===4?'over':''}"><td>${t}</td><td>${fmt(g)}</td><td>${fmt(inert)}</td><td class="${force>0?'pos':''}">${force>0?'+':''}${fmt(force)}</td><td class="vcol">${fmt(v)}</td><td class="${y<0&&t===4?'neg-y':''}">${fmt(y)}</td></tr>`}
+ $('momx-table').innerHTML=rows;
+ // weights 1, .9, .81, ...
+ const W=700,H=150,n=14,bw=34,gap=(W-40-n*bw)/(n-1);let a=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="과거 기울기에 곱해지는 가중치">`;
+ for(let k=0;k<n;k++){const w=.9**k,x=20+k*(bw+gap),hh=w*92;a+=`<rect x="${x}" y="${104-hh}" width="${bw}" height="${hh}" rx="3" fill="${C.mom}" opacity="${.35+.65*w}"/>`;if(k<4)a+=txt(x+bw/2,98-hh,w.toFixed(k?2:0).replace(/0+$/,'').replace(/\.$/,''),15,C.ink,'middle','font-weight="700"');a+=txt(x+bw/2,126,k===0?'gₜ':k<4?`gₜ₋${'₀₁₂₃'[k]}`:'',15,C.muted,'middle')}
+ a+=txt(20,146,'← 최근 기울기',15,C.muted)+txt(W-20,146,'오래된 기울기 →',15,C.muted,'end')+'</svg>';$('momx-w').innerHTML=a;
+ // cases
+ const cases=[['SGD (α = 0)','매번 이번 기울기만큼',1,C.sgd],['같은 방향  g, g, g, …','충분히 쌓이면 1/(1−0.9)',10,C.mom],['번갈아  g, −g, g, −g, …','1/(1+0.9)',1/1.9,C.mom]];
+ let b=`<svg viewBox="0 0 700 196" role="img" aria-label="기울기 패턴별 이동량 비교">`;const X0=250,sc=(700-X0-80)/10;
+ cases.forEach(([lab,sub,val,col],i)=>{const y=14+i*62;b+=txt(0,y+20,lab,18,C.ink,'start','font-weight="700"')+txt(0,y+43,sub,14,C.muted);b+=`<rect x="${X0}" y="${y+6}" width="${Math.max(3,val*sc)}" height="30" rx="3" fill="${col}" opacity="${i===0?.85:1}"/>`;b+=txt(X0+val*sc+10,y+28,(val===10?'10':val===1?'1':val.toFixed(2))+' 배',19,col,'start','font-weight="700" font-family="Consolas,monospace"')});
+ $('momx-case').innerHTML=b+'</svg>'}
+
+// ---------- 07 momentum path ----------
+const momP=player('mom',29,i=>{const h=HIST.Momentum;field($('mom-plot'),900,500,{paths:[{h:HIST.SGD,color:'#a9b4b2',faint:true,start:false},{h,upto:i,color:C.mom,ghost:true,vel:3}],minLabel:true,...ZOOM});
+ $('mom-count').textContent=`${pad(i)} / 29 · (${fmt(h[i].x)}, ${fmt(h[i].y)}) · f = ${fmt(h[i].f,3)}`});
+
+// ---------- 08 AdaGrad effective step ----------
+const AH=HIST.AdaGrad,effX=AH.map(o=>o.h[0]?1.5/(Math.sqrt(o.h[0])+1e-7):NaN),effY=AH.map(o=>o.h[1]?1.5/(Math.sqrt(o.h[1])+1e-7):NaN);
+const effP=player('eff',29,i=>{const ex=effX.slice(1),ey=effY.slice(1);
+ lines($('ada-eff'),760,300,[{vals:ex,color:C.ink,dash:'8 6',label:'x 방향',ly:-10},{vals:ey,color:C.ada,label:'y 방향',ly:20}],{xmax:28,ymin:0,ymax:2.4,upto:i-1,xticks:[0,9,19,28],xtf:v=>String(v+1),yticks:[0,.5,1,1.5,2],ytf:v=>v===1.5?'1.5 = η':String(v),xlabel:'갱신 횟수',m:{l:80,r:70,t:20,b:50},label:'갱신 횟수에 따른 보폭 계수'});
+ const mx=2.4;$('gx').style.width=(effX[i]/mx*100)+'%';$('gy').style.width=(effY[i]/mx*100)+'%';$('gxv').textContent=fmt(effX[i],3);$('gyv').textContent=fmt(effY[i],3);
+ $('ada-stepinfo').textContent=`${i}번째 갱신`;$('ada-explain').innerHTML=`누적 h = ( ${fmt(AH[i].h[0],2)} , ${fmt(AH[i].h[1],2)} ) · y는 첫 기울기 4가 커서 h가 단숨에 16이 된다`;
+ $('eff-count').textContent=`${pad(i)} / 29`},{min:1,init:1,delay:240});
+
+// ---------- 09 AdaGrad path ----------
+const adaP=player('ada',29,i=>{const h=HIST.AdaGrad;field($('ada-plot'),900,500,{paths:[{h:HIST.SGD,color:'#a9b4b2',faint:true,start:false},{h,upto:i,color:C.ada,ghost:true}],minLabel:true,...ZOOM,extra:g=>{if(i<1)return;const a=[g.X(-7),g.Y(2)],b=[g.X(-5.5),g.Y(2)],c=[g.X(-5.5),g.Y(.5)];g.add(arrow(...a,...b,'#7f8d8b',2,9,'stroke-dasharray="0"'));g.add(arrow(...b,...c,'#7f8d8b',2,9));g.add(txt((a[0]+b[0])/2,a[1]-10,'+1.5',15,C.muted,'middle'));g.add(txt(b[0]+10,(b[1]+c[1])/2+5,'−1.5',15,C.muted))}});
+ $('ada-count').textContent=`${pad(i)} / 29 · (${fmt(h[i].x)}, ${fmt(h[i].y)}) · f = ${fmt(h[i].f,4)}`});
+
+// ---------- 10 Adam ----------
+const adamP=player('adam',29,i=>{const h=HIST.Adam;field($('adam-plot'),800,470,{paths:[{h:HIST.Momentum,color:'#93a7bd',faint:true,start:false},{h,upto:i,color:C.adam,ghost:true}],minLabel:true,...ZOOM});
+ $('adam-count').textContent=`${pad(i)} / 29 · f = ${fmt(h[i].f,3)}`});
+
+// ---------- 11 comparison ----------
+$('quad').innerHTML=METHODS.map(n=>`<div><div class="qhead"><span class="chip c-${META[n].key}"><i></i>${META[n].ko} <span class="math">η = ${META[n].lr}</span></span><span class="lossv" id="ql-${n}"></span></div><div class="plot qplot" id="q-${n}"></div></div>`).join('');
+const cmpP=player('cmp',29,i=>{METHODS.forEach(n=>{field($('q-'+n),468,206,{labels:false,xmin:-9.5,xmax:9.5,ymin:-3,ymax:3,startLabel:false,paths:[{h:HIST[n],upto:i,color:C[META[n].key],ghost:true}]});$('ql-'+n).textContent='f = '+fmt(HIST[n][i].f,4)});
+ lines($('cmp-loss'),444,260,METHODS.map(n=>({vals:HIST[n].map(o=>o.f),color:C[META[n].key],w:2.4})),{xmax:29,ymin:-4,ymax:1,log:true,upto:i,xticks:[0,10,20,29],yticks:[1,0,-1,-2,-3,-4],ytf:v=>v===0?'1':'10'+({1:'¹','-1':'⁻¹','-2':'⁻²','-3':'⁻³','-4':'⁻⁴'})[v],m:{l:54,r:12,t:12,b:40},label:'갱신 횟수에 따른 손실, 로그 축'});
+ $('cmp-count').textContent=`${pad(i)} / 29`});
+
+// ---------- 11b flip ----------
+const RG=(x,y)=>[1.05*x-.95*y,-.95*x+1.05*y],RF=(x,y)=>.5*(1.05*x*x-1.9*x*y+1.05*y*y),RS=[Math.SQRT1_2*(-7-2),Math.SQRT1_2*(-7+2)];
+const RHIST={};['SGD','AdaGrad'].forEach(n=>RHIST[n]=simulate(n,29,{grad:RG,f:RF,start:RS}));
+const SAME={};METHODS.forEach(n=>SAME[n]=simulate(n,29,{lr:.3}).at(-1).f);
+function flip(){field($('flip-rot'),700,440,{rot:45,xmin:-9,xmax:2.6,ymin:-6.3,ymax:1.4,xticks:[-8,-6,-4,-2,0,2],yticks:[-6,-4,-2,0],startLabel:false,minLabel:true,
+  paths:[{h:RHIST.SGD,color:C.sgd,width:2.6},{h:RHIST.AdaGrad,color:C.ada,width:3.2}],extra:g=>g.add(txt(g.X(RS[0])-12,g.Y(RS[1])+5,'시작',15,C.muted,'end'))});
+ $('flip-legend').innerHTML=['SGD','AdaGrad'].map(n=>`<span class="chip c-${META[n].key}"><i></i>${META[n].ko}<span class="v">${fmt(HIST[n].at(-1).f,4)} → ${fmt(RHIST[n].at(-1).f,4)}</span></span>`).join('');
+ const W=700,H=440,L=230,Rr=470;let a=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="교재 학습률과 같은 학습률에서의 손실 순위 비교">`;
+ const left=[...METHODS].sort((p,q)=>HIST[p].at(-1).f-HIST[q].at(-1).f),right=[...METHODS].sort((p,q)=>SAME[p]-SAME[q]);const Y=r=>92+r*88;
+ a+=txt(L,34,'교재의 학습률',18,C.ink,'middle','font-weight="700"')+txt(L,56,'0.95 · 0.1 · 1.5 · 0.3',14,C.muted,'middle')+txt(Rr,34,'모두 η = 0.3',18,C.ink,'middle','font-weight="700"')+txt(Rr,56,'같은 조건',14,C.muted,'middle');
+ for(let r=0;r<4;r++){a+=txt(L-150,Y(r)+6,`${r+1}위`,15,C.muted)}
+ METHODS.forEach(n=>{const l=left.indexOf(n),r=right.indexOf(n),col=C[META[n].key],hi=n==='AdaGrad';a+=`<line x1="${L}" y1="${Y(l)}" x2="${Rr}" y2="${Y(r)}" stroke="${col}" stroke-width="${hi?5:2.5}" opacity="${hi?1:.45}"/>`;a+=dot(L,Y(l),hi?8:6,col,`stroke="${C.paper}" stroke-width="2"`)+dot(Rr,Y(r),hi?8:6,col,`stroke="${C.paper}" stroke-width="2"`);
+  a+=txt(L-16,Y(l)-2,META[n].ko,17,col,'end','font-weight="700"')+txt(L-16,Y(l)+18,fmt(HIST[n].at(-1).f,4),14,C.muted,'end','font-family="Consolas,monospace"');
+  a+=txt(Rr+16,Y(r)-2,META[n].ko,17,col,'start','font-weight="700"')+txt(Rr+16,Y(r)+18,fmt(SAME[n],4),14,C.muted,'start','font-family="Consolas,monospace"')});
+ $('flip-slope').innerHTML=a+'</svg>'}
+
+// ---------- 12 MNIST ----------
+const MN_N=MNIST.SGD.length;
+const mnP=player('mn',MN_N-1,i=>{lines($('mnist-chart'),960,500,METHODS.map(n=>({vals:MNIST[n],color:C[META[n].key],w:2.8,label:i>=MN_N-1?META[n].ko:null,ls:16,ly:n==='SGD'?-8:n==='Momentum'?-4:n==='AdaGrad'?14:4})),{xmax:2000,xs:k=>k*10,ymin:0,ymax:1,upto:i,xticks:[0,500,1000,1500,2000],yticks:[0,.2,.4,.6,.8,1],ytf:v=>v.toFixed(1),xlabel:'학습 반복 횟수',ylabel:'손실 (부드럽게 처리)',m:{l:60,r:90,t:34,b:52},label:'MNIST 학습에서 네 기법의 손실 곡선'});
+ $('mn-count').textContent=`${String(i*10).padStart(4,'0')} / 2000`},{delay:45});
+(function rank(){const r=MNIST.raw_last100_mean,mx=Math.max(...METHODS.map(n=>r[n]));$('rank').innerHTML=[...METHODS].sort((a,b)=>r[a]-r[b]).map(n=>`<div class="rank-row"><span class="chip c-${META[n].key}"><i></i>${META[n].ko}</span><div class="bar" style="width:${r[n]/mx*100}%;background:${C[META[n].key]}"></div><span class="v">${r[n].toFixed(3)}</span></div>`).join('')})();
+
+// ---------- 13 closing ----------
+function closing(){field($('closing-plot'),780,470,{labels:false,dark:true,xmin:-9,xmax:9,ymin:-3,ymax:3,startLabel:false,paths:METHODS.map(n=>({h:HIST[n],color:DARK[META[n].key],width:3})),extra:g=>g.add(txt(g.X(-7),g.Y(2)-16,'시작',15,'#a6bbc3','middle'))})}
+
+function drawOn(sl){sl.querySelectorAll('path.trace').forEach((p,i)=>{const L=p.getTotalLength();if(!L)return;p.style.transition='none';p.style.strokeDasharray=L;p.style.strokeDashoffset=L;p.getBoundingClientRect();p.style.transition=`stroke-dashoffset 1.5s cubic-bezier(.4,.1,.2,1) ${.15+i*.22}s`;p.style.strokeDashoffset=0});
+ sl.querySelectorAll('.pdot').forEach(d=>{d.style.transition='none';d.style.opacity=0;d.getBoundingClientRect();d.style.transition='opacity .6s ease 1.4s';d.style.opacity=1})}
+const ENTER={cover:s=>drawOn(s),recap:s=>drawOn(s),momc:()=>startBowl()},LEAVE={momc:()=>stopBowl()};
+
+function uprightOps(root=document){const NON=/[^A-Za-zα-ωΑ-Ω\s]+/g;root.querySelectorAll('.math').forEach(el=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);const nodes=[];while(w.nextNode())nodes.push(w.currentNode);nodes.forEach(t=>{if(t.parentElement.closest('.op')||!/[^A-Za-zα-ωΑ-Ω\s]/.test(t.data))return;const f=document.createDocumentFragment();let last=0;t.data.replace(NON,(m,i)=>{if(i>last)f.appendChild(document.createTextNode(t.data.slice(last,i)));const sp=document.createElement('span');sp.className='op';sp.textContent=m;f.appendChild(sp);last=i+m.length;return m});if(last<t.data.length)f.appendChild(document.createTextNode(t.data.slice(last)));t.replaceWith(f)})})}
+function staticPlots(){uprightOps();cover();terrain();renderCode();aniso();momx();flip();players.forEach(p=>p.set(p.cur));closing()}
+
+// ---------- presentation shell ----------
+const slides=[...document.querySelectorAll('.slide')];let current=0,lastFocus=null;
+slides.forEach((s,i)=>{const p=s.querySelector('.page');if(p)p.textContent=`${pad(i+1)} / ${pad(slides.length)}`});
+function resize(){let maxW=window.innerWidth,maxH=window.innerHeight-(document.body.classList.contains('presenting')?0:54),scale=Math.min(maxW/1600,maxH/900);$('frame').style.width=1600*scale+'px';$('frame').style.height=900*scale+'px';$('deck').style.transform=`scale(${scale})`}
+function updateNotes(){$('notes-title').textContent=`${pad(current+1)} · ${slides[current].dataset.title}`;$('notes-text').innerHTML=slides[current].querySelector('.notes').innerHTML}
+function go(n,hash=true){n=Math.max(0,Math.min(slides.length-1,n));stopAll();const prevKey=slides[current].dataset.key;if(LEAVE[prevKey])LEAVE[prevKey]();slides[current].classList.remove('active');current=n;const s=slides[current];s.classList.add('active');slides.forEach((x,i)=>x.setAttribute('aria-hidden',String(i!==current)));$('position').textContent=pad(current+1)+' / '+pad(slides.length);$('prev').disabled=current===0;$('next').disabled=current===slides.length-1;$('progress').style.width=((current+1)/slides.length*100)+'%';if(hash)history.replaceState(null,'','#'+(current+1));updateNotes();if(ENTER[s.dataset.key])ENTER[s.dataset.key](s)}
+function closeOverlays(){document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('open'));if(lastFocus)lastFocus.focus()}
+function overlay(id){let el=$(id),was=el.classList.contains('open');closeOverlays();if(!was){lastFocus=document.activeElement;el.classList.add('open');el.querySelector('button').focus();if(id==='notes-overlay')updateNotes()}}
+let hadNativeFullscreen=false;async function fullscreen(){const enter=!document.body.classList.contains('presenting');document.body.classList.toggle('presenting',enter);resize();try{if(enter&&!document.fullscreenElement&&document.fullscreenEnabled)await document.documentElement.requestFullscreen();else if(!enter&&document.fullscreenElement)await document.exitFullscreen()}catch(e){}}
+document.addEventListener('fullscreenchange',()=>{if(document.fullscreenElement){hadNativeFullscreen=true}else if(hadNativeFullscreen){hadNativeFullscreen=false;document.body.classList.remove('presenting');resize()}});$('exit-present').onclick=fullscreen;
+$('prev').onclick=()=>go(current-1);$('next').onclick=()=>go(current+1);$('toc-btn').onclick=()=>overlay('toc-overlay');$('notes-btn').onclick=()=>overlay('notes-overlay');$('full-btn').onclick=fullscreen;
+$('toc-list').innerHTML=slides.map((s,i)=>`<button data-go="${i}"><span class="num">${pad(i+1)}</span><span>${esc(s.dataset.title)}</span></button>`).join('');document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{go(Number(b.dataset.go));closeOverlays()});document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeOverlays);document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeOverlays()}));
+document.addEventListener('keydown',e=>{let open=document.querySelector('.overlay.open');if(open){if(e.key==='Escape'){e.preventDefault();closeOverlays()}else if(e.key==='Tab'){let f=[...open.querySelectorAll('button,a,input')];if(e.shiftKey&&document.activeElement===f[0]){e.preventDefault();f.at(-1).focus()}else if(!e.shiftKey&&document.activeElement===f.at(-1)){e.preventDefault();f[0].focus()}}return}
+ if(e.key==='Escape'&&document.body.classList.contains('presenting')){fullscreen();return}if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;if(e.target.closest('button')&&(e.key===' '||e.key==='Enter'))return;
+ if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();go(current+1)}else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();go(current-1)}else if(e.key==='Home'){e.preventDefault();go(0)}else if(e.key==='End'){e.preventDefault();go(slides.length-1)}else if(e.key.toLowerCase()==='f')fullscreen();else if(e.key.toLowerCase()==='n')overlay('notes-overlay');else if(e.key.toLowerCase()==='o')overlay('toc-overlay')});
+let touchStart=null;$('viewport').addEventListener('touchstart',e=>{if(e.target.closest('button,input'))return;touchStart=e.changedTouches[0].clientX},{passive:true});$('viewport').addEventListener('touchend',e=>{if(touchStart===null)return;let d=e.changedTouches[0].clientX-touchStart;if(Math.abs(d)>65)go(current+(d<0?1:-1));touchStart=null},{passive:true});
+window.addEventListener('resize',resize);window.addEventListener('hashchange',()=>{let n=Number(location.hash.slice(1));if(Number.isInteger(n)&&n>=1&&n<=slides.length)go(n-1,false)});
+window.addEventListener('beforeprint',()=>{stopAll();stopBowl();players.forEach(p=>p.set(p===effP?29:p===mnP?MN_N-1:29));tStep=walk.length-1;tFog=false;terrain();startBowl();stopBowl()});
+staticPlots();resize();let initial=Number(location.hash.slice(1));go(initial>=1&&initial<=slides.length?initial-1:0,false);
+</script>
+</body>
+</html>
