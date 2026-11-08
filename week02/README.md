@@ -37,7 +37,7 @@
 
 ## 📎 공부 내용 정리
 
-- `AID_DL_Chapter(3_3,_3_4).jpynb`
+- `AID_DL_Chapter(3_3,_3_4).ipynb`
 
 
 ---
