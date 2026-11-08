@@ -38,7 +38,7 @@
 
 - `AID_DL_Chapter(4.3).pdf`
 - `AID_DL_Chapter(4.4).html`
-- `AID_DL_Chapter(4.5).jpynb`
+- `AID_DL_Chapter(4.5).ipynb`
 - `AID_DL_Chapter(5.1).pdf`
 
 
