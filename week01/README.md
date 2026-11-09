@@ -40,9 +40,9 @@
 
 예시:
 
-- `week01_AID_DL_Chapter1_1.jpynb`
-- `week01_AID_DL_Chapter1_2.jpynb`
-- `week01_AID_DL_Chapter2_1.jpynb`
+- `week01_AID_DL_Chapter1_1.ipynb`
+- `week01_AID_DL_Chapter1_2.ipynb`
+- `week01_AID_DL_Chapter2_1.ipynb`
 - `week01_AID_DL_Chapter2_presentation.pdf`
 
 ---
