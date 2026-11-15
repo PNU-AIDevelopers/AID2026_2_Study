@@ -33,6 +33,7 @@
 ## 📄 학습 자료
 
 - [Week 04 스터디 내용 정리 (PDF)](./week04_summary.pdf)
+- [Transformer NER 모델 구조 확인 실습 코드 (신민영)](./check_architecture.py)
 
 ## 💬 회고
 
