@@ -28,7 +28,7 @@ ResCLIP, ReAct, OGDM에 관해 각자 읽은 내용을 발표함.
 
 ## 공부 내용 정리
 
-- [OGDM.pdf](./notes/OGDM.pdf)
+- [ReAct.pdf](./notes/ReAct.pdf)
 
 ---
 
