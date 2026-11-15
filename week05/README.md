@@ -38,12 +38,12 @@
 
 ## 📎 공부 내용 정리
 
-- `AID_DL_Chapter(5.2, 5.3).html(html파일)`
-- `AID_DL_Chapter(5.4, 5.5).pdf`
-- `AID_DL_Chapter(5.6, 5.7).pdf`
-- `AID_DL_Chapter(6.1).html(html파일)`
-- `Chapter5_code1.ipynb`
-- `Chapter5_code2.ipynb`
+- `AID_DL_Chapter(6.2).pdf`
+- `AID_DL_Chapter(6.3).pdf`
+- `AID_DL_Chapter(6.4).html(html파일)`
+- `AID_DL_Chapter(6.5).html(html파일)`
+- `Chapter6_code1.ipynb`
+- `Chapter6_code2.ipynb`
 
 
 
