@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.5 적절한 하이퍼파라미터 값 찾기</title>
+<style>
+  :root{
+    --bg1:#0f172a; --bg2:#1e293b; --accent:#38bdf8; --accent2:#a78bfa;
+    --text:#e2e8f0; --muted:#94a3b8; --card:rgba(255,255,255,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif;
+    background:linear-gradient(135deg,var(--bg1),var(--bg2));color:var(--text)}
+  .deck{position:relative;width:100%;height:100%}
+  .slide{position:absolute;inset:0;padding:6vh 8vw;display:flex;flex-direction:column;justify-content:center;
+    opacity:0;transform:translateX(40px);pointer-events:none;transition:opacity .45s,transform .45s}
+  .slide.active{opacity:1;transform:none;pointer-events:auto}
+  .slide.prev{transform:translateX(-40px)}
+  h1{font-size:clamp(2rem,5vw,3.6rem);line-height:1.25;margin-bottom:.6em}
+  h2{font-size:clamp(1.5rem,3.2vw,2.4rem);margin-bottom:.8em;color:var(--accent);
+    border-left:6px solid var(--accent2);padding-left:.5em}
+  h3{font-size:clamp(1.1rem,2vw,1.5rem);margin-bottom:.4em;color:var(--accent2)}
+  p,li{font-size:clamp(1rem,1.9vw,1.4rem);line-height:1.7}
+  ul{padding-left:1.2em}
+  li{margin:.4em 0}
+  .sub{color:var(--muted);font-size:clamp(1rem,2vw,1.5rem)}
+  .tag{display:inline-block;padding:.2em .8em;border-radius:99px;background:var(--accent2);color:#0f172a;
+    font-weight:700;font-size:.9rem;margin-bottom:1em;width:fit-content}
+  .grid{display:grid;gap:1.2rem;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+  .card{background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:1.2rem 1.4rem}
+  .card .big{font-size:2rem;margin-bottom:.2em}
+  .note{background:rgba(56,189,248,.1);border-left:5px solid var(--accent);padding:1rem 1.3rem;border-radius:8px;margin-top:1.2rem}
+  .warn{background:rgba(248,113,113,.12);border-left:5px solid #f87171}
+  pre{background:#0b1220;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:1rem 1.3rem;
+    font-family:"Fira Code",Consolas,monospace;font-size:clamp(.8rem,1.5vw,1.1rem);line-height:1.6;overflow:auto;color:#bae6fd}
+  pre .c{color:#64748b}
+  code{font-family:Consolas,monospace;color:#fbbf24}
+  table{border-collapse:collapse;width:100%;font-size:clamp(.9rem,1.7vw,1.25rem)}
+  th,td{padding:.7em 1em;text-align:center;border-bottom:1px solid rgba(255,255,255,.12)}
+  th{color:var(--accent);background:rgba(255,255,255,.05)}
+  tr:first-child td{color:#4ade80;font-weight:700}
+  .steps{display:flex;flex-direction:column;gap:.9rem}
+  .step{display:flex;gap:1rem;align-items:center;background:var(--card);border-radius:14px;padding:.9rem 1.2rem}
+  .step b{flex:0 0 auto;background:var(--accent);color:#0f172a;border-radius:10px;padding:.3em .8em;font-size:1.1rem}
+  .bar{position:fixed;top:0;left:0;height:5px;background:linear-gradient(90deg,var(--accent),var(--accent2));
+    width:0;transition:width .3s;z-index:10}
+  .nav{position:fixed;bottom:2vh;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:1rem;z-index:10}
+  .nav button{background:var(--card);color:var(--text);border:1px solid rgba(255,255,255,.2);border-radius:50%;
+    width:42px;height:42px;font-size:1.1rem;cursor:pointer}
+  .nav button:hover{background:var(--accent);color:#0f172a}
+  .count{color:var(--muted);font-size:.95rem;min-width:70px;text-align:center}
+  .foot{position:fixed;bottom:2.5vh;right:3vw;color:var(--muted);font-size:.85rem}
+  .center{align-items:center;text-align:center}
+  .formula{font-size:clamp(1.2rem,2.6vw,2rem);text-align:center;padding:1rem;background:var(--card);border-radius:14px;margin:1rem 0}
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+<div class="deck" id="deck">
+
+  <!-- 1. 표지 -->
+  <section class="slide center">
+    <span class="tag">6장 · 학습 관련 기술들</span>
+    <h1>적절한 하이퍼파라미터<br>값 찾기</h1>
+    <p class="sub">검증 데이터 · 하이퍼파라미터 최적화 · MNIST 실험</p>
+    <p class="sub" style="margin-top:2em">밑바닥부터 시작하는 딥러닝 (사이토 고키) §6.5</p>
+  </section>
+
+  <!-- 2. 목차 -->
+  <section class="slide">
+    <h2>목차</h2>
+    <div class="grid">
+      <div class="card"><div class="big">0️⃣</div><h3>드롭아웃 보충</h3><p>앙상블 학습과의 관계</p></div>
+      <div class="card"><div class="big">1️⃣</div><h3>6.5.1 검증 데이터</h3><p>왜 시험 데이터를 쓰면 안 될까?</p></div>
+      <div class="card"><div class="big">2️⃣</div><h3>6.5.2 최적화 방법</h3><p>범위를 점점 좁혀가기</p></div>
+      <div class="card"><div class="big">3️⃣</div><h3>6.5.3 구현</h3><p>MNIST 실험 결과</p></div>
+      <div class="card"><div class="big">4️⃣</div><h3>6.6 정리</h3><p>6장 핵심 요약</p></div>
+    </div>
+  </section>
+
+  <!-- 3. 드롭아웃 -->
+  <section class="slide">
+    <h2>드롭아웃의 효과</h2>
+    <ul>
+      <li>드롭아웃을 적용하자 <b>훈련·시험 데이터의 정확도 차이가 감소</b></li>
+      <li>훈련 데이터 정확도가 100%에 도달하지 않게 됨</li>
+      <li>➜ 표현력을 높이면서도 <b>오버피팅을 억제</b>할 수 있다</li>
+    </ul>
+    <div class="note">
+      <h3>💡 앙상블 학습(Ensemble learning)과의 관계</h3>
+      <p>여러 모델을 따로 학습시키고, 추론 시 출력을 평균 내는 방식입니다. 드롭아웃은 뉴런을 무작위로 삭제하여 매번 다른 모델을 학습시키는 것으로 볼 수 있고, 추론 시 출력에 삭제 비율을 곱해 평균 효과를 냅니다. 즉 <b>앙상블과 비슷한 효과를 하나의 네트워크로 구현</b>한 셈입니다.</p>
+    </div>
+  </section>
+
+  <!-- 4. 하이퍼파라미터란 -->
+  <section class="slide">
+    <span class="tag">6.5</span>
+    <h2>하이퍼파라미터란?</h2>
+    <div class="grid">
+      <div class="card"><div class="big">🧠</div><p>각 층의 뉴런 수</p></div>
+      <div class="card"><div class="big">📦</div><p>배치 크기</p></div>
+      <div class="card"><div class="big">📉</div><p>매개변수 갱신 시 학습률</p></div>
+      <div class="card"><div class="big">⚖️</div><p>가중치 감소</p></div>
+    </div>
+    <div class="note warn">
+      <p>값을 적절히 설정하지 않으면 모델 성능이 크게 떨어질 수 있습니다. 값 결정에는 많은 시행착오가 필요하므로, <b>최대한 효율적으로 탐색하는 방법</b>이 중요합니다.</p>
+    </div>
+  </section>
+
+  <!-- 5. 검증 데이터 필요성 -->
+  <section class="slide">
+    <span class="tag">6.5.1</span>
+    <h2>검증 데이터가 필요한 이유</h2>
+    <ul>
+      <li>지금까지는 <b>훈련 데이터</b>(학습)와 <b>시험 데이터</b>(범용 성능 평가)로만 분리</li>
+      <li>하이퍼파라미터 성능을 평가할 때 <b>시험 데이터를 사용하면 안 된다</b></li>
+    </ul>
+    <div class="note warn">
+      <h3>⚠️ 이유</h3>
+      <p>시험 데이터로 하이퍼파라미터를 조정하면 값이 <b>시험 데이터에 오버피팅</b>됩니다. 시험 데이터에만 맞춰진 값은 다른 데이터에서 범용 성능이 떨어질 수 있습니다.</p>
+    </div>
+    <p style="margin-top:1rem">➜ 하이퍼파라미터 조정 전용 데이터인 <b>검증 데이터(validation data)</b>가 필요합니다.</p>
+  </section>
+
+  <!-- 6. 3가지 데이터 역할 -->
+  <section class="slide">
+    <h2>훈련 · 검증 · 시험 데이터의 역할</h2>
+    <div class="grid">
+      <div class="card"><div class="big">🏋️</div><h3>훈련 데이터</h3><p>매개변수(가중치·편향) 학습</p></div>
+      <div class="card"><div class="big">🔍</div><h3>검증 데이터</h3><p>하이퍼파라미터 성능 평가</p></div>
+      <div class="card"><div class="big">🧪</div><h3>시험 데이터</h3><p>신경망의 범용 성능 확인<br><small class="sub">마지막에 (이상적으로는 한 번만) 사용</small></p></div>
+    </div>
+  </section>
+
+  <!-- 7. 검증 데이터 분리 코드 -->
+  <section class="slide">
+    <h2>MNIST에서 검증 데이터 분리하기</h2>
+    <p>MNIST는 훈련/시험 데이터만 제공 ➜ 훈련 데이터의 <b>20%</b>를 검증 데이터로 분리</p>
+<pre><span class="c"># 훈련 데이터를 뒤섞는다.</span>
+(x_train, t_train), (x_test, t_test) = load_mnist()
+x_train, t_train = shuffle_dataset(x_train, t_train)
+
+<span class="c"># 20%를 검증 데이터로 분할</span>
+validation_rate = 0.20
+validation_num = int(x_train.shape[0] * validation_rate)
+
+x_val = x_train[:validation_num]
+t_val = t_train[:validation_num]
+x_train = x_train[validation_num:]
+t_train = t_train[validation_num:]</pre>
+    <div class="note"><p>분리 전에 입력 데이터와 정답 레이블을 <b>함께 뒤섞는</b> 이유: 데이터가 치우쳐 있을 수 있기 때문입니다 (예: 0~9 순서대로 정렬). <code>shuffle_dataset</code>은 <code>np.random.shuffle</code>을 이용하며 <code>common/util.py</code>에 있습니다.</p></div>
+  </section>
+
+  <!-- 8. 최적화 핵심 -->
+  <section class="slide">
+    <span class="tag">6.5.2</span>
+    <h2>하이퍼파라미터 최적화의 핵심</h2>
+    <p>'최적 값'이 존재하는 범위를 <b>조금씩 좁혀가는 것</b></p>
+    <div class="grid" style="margin-top:1.2rem">
+      <div class="card"><h3>🎲 무작위 샘플링</h3><p>그리드 서치 같은 규칙적 탐색보다 무작위 탐색이 더 좋은 결과를 내는 것으로 알려져 있음 (하이퍼파라미터마다 최종 정확도에 미치는 영향력이 다르기 때문)</p></div>
+      <div class="card"><h3>📏 로그 스케일</h3><p>범위를 '대략적으로' 지정. 예: 0.001 ~ 1,000 (10<sup>-3</sup>~10<sup>3</sup>)처럼 10의 거듭제곱 단위</p></div>
+      <div class="card"><h3>⏱️ 짧은 에폭</h3><p>딥러닝 학습은 오래 걸리므로, 나쁜 값은 일찍 포기. 에폭을 작게 해 1회 평가 시간 단축</p></div>
+    </div>
+  </section>
+
+  <!-- 9. 4단계 -->
+  <section class="slide">
+    <h2>최적화 절차 요약</h2>
+    <div class="steps">
+      <div class="step"><b>0단계</b><p>하이퍼파라미터 값의 범위를 설정</p></div>
+      <div class="step"><b>1단계</b><p>설정된 범위에서 값을 무작위로 추출</p></div>
+      <div class="step"><b>2단계</b><p>샘플링한 값으로 학습하고 <u>검증 데이터</u>로 정확도 평가 (에폭은 작게)</p></div>
+      <div class="step"><b>3단계</b><p>1~2단계를 특정 횟수(예: 100회) 반복, 정확도 결과를 보고 범위를 좁힘</p></div>
+    </div>
+    <p style="margin-top:1rem">범위가 충분히 좁아지면 그 안에서 값을 하나 골라냅니다.</p>
+  </section>
+
+  <!-- 10. 베이즈 최적화 -->
+  <section class="slide">
+    <h2>참고: 더 세련된 방법</h2>
+    <div class="note">
+      <h3>베이즈 최적화 (Bayesian optimization)</h3>
+      <p>지금까지 설명한 방법은 <b>실용적</b>이지만 과학적이기보다는 수행자의 '지혜'와 '직관'에 의존하는 느낌이 있습니다. 베이즈 최적화는 베이즈 정리를 중심으로 한 수학 이론으로 더 엄밀하고 효율적으로 최적화를 수행합니다.</p>
+      <p style="margin-top:.8rem" class="sub">📄 참고: 〈Practical Bayesian Optimization of Machine Learning Algorithms〉</p>
+    </div>
+  </section>
+
+  <!-- 11. 구현 -->
+  <section class="slide">
+    <span class="tag">6.5.3</span>
+    <h2>구현: 학습률 &amp; 가중치 감소 계수 탐색</h2>
+    <p>MNIST 데이터셋으로 <b>학습률</b>과 <b>가중치 감소 계수</b>를 탐색 (Stanford CS231n 참고)</p>
+    <div class="formula">10 ** np.random.uniform(-3, 3) &nbsp;→&nbsp; 10<sup>-3</sup> ~ 10<sup>3</sup> 로그 스케일 추출</div>
+<pre>weight_decay = 10 ** np.random.uniform(-8, -4)   <span class="c"># 10⁻⁸ ~ 10⁻⁴</span>
+lr           = 10 ** np.random.uniform(-6, -2)   <span class="c"># 10⁻⁶ ~ 10⁻²</span></pre>
+    <p style="margin-top:1rem">이 값들로 학습을 반복하며 좋은 값이 어디에 있는지 관찰합니다. <span class="sub">(구현: ch06/hyperparameter_optimization.py)</span></p>
+  </section>
+
+  <!-- 12. 결과 -->
+  <section class="slide">
+    <h2>실험 결과 (검증 정확도 상위 5개)</h2>
+    <table>
+      <tr><th>순위</th><th>검증 정확도</th><th>학습률 (lr)</th><th>가중치 감소 계수</th></tr>
+      <tr><td>Best-1</td><td>0.83</td><td>0.0092</td><td>3.86e-07</td></tr>
+      <tr><td>Best-2</td><td>0.78</td><td>0.00956</td><td>6.04e-07</td></tr>
+      <tr><td>Best-3</td><td>0.77</td><td>0.00571</td><td>1.27e-06</td></tr>
+      <tr><td>Best-4</td><td>0.74</td><td>0.00626</td><td>1.43e-05</td></tr>
+      <tr><td>Best-5</td><td>0.73</td><td>0.0052</td><td>8.97e-06</td></tr>
+    </table>
+    <div class="note">
+      <p>그림 6-24(검증 정확도 순 학습 추이)에서 'Best-5' 정도까지는 학습이 순조롭게 진행됩니다.</p>
+    </div>
+  </section>
+
+  <!-- 13. 결과 해석 -->
+  <section class="slide">
+    <h2>결과 해석 &amp; 다음 단계</h2>
+    <div class="grid">
+      <div class="card"><div class="big">📉</div><h3>학습률</h3><p>잘 될 때 <b>0.001 ~ 0.01</b></p></div>
+      <div class="card"><div class="big">⚖️</div><h3>가중치 감소 계수</h3><p>대략 <b>10<sup>-8</sup> ~ 10<sup>-6</sup></b></p></div>
+    </div>
+    <ul style="margin-top:1.2rem">
+      <li>잘 될 것 같은 값의 범위를 관찰하고 <b>범위를 좁힌다</b></li>
+      <li>좁혀진 범위에서 같은 작업을 반복한다</li>
+      <li>특정 단계에서 <b>최종 하이퍼파라미터 값을 하나 선택</b></li>
+    </ul>
+  </section>
+
+  <!-- 14. 정리 -->
+  <section class="slide">
+    <span class="tag">6.6</span>
+    <h2>이번 장에서 배운 내용</h2>
+    <ul>
+      <li>매개변수 갱신 방법: SGD 외에도 <b>모멘텀, AdaGrad, Adam</b> 등</li>
+      <li>가중치 초깃값 설정은 올바른 학습에 매우 중요 — <b>Xavier / He 초깃값</b>이 효과적</li>
+      <li><b>배치 정규화</b>: 학습을 빠르게, 초깃값 영향을 덜 받음</li>
+      <li>오버피팅 억제 정규화: <b>가중치 감소</b>와 <b>드롭아웃</b></li>
+      <li>하이퍼파라미터 탐색: 최적 값이 존재할 법한 <b>범위를 점차 좁히며</b> 진행</li>
+    </ul>
+  </section>
+
+  <!-- 15. 끝 -->
+  <section class="slide center">
+    <h1>감사합니다 🙌</h1>
+    <p class="sub">Q &amp; A</p>
+  </section>
+</div>
+
+<div class="nav">
+  <button id="prev" aria-label="이전">◀</button>
+  <span class="count" id="count"></span>
+  <button id="next" aria-label="다음">▶</button>
+</div>
+<div class="foot">밑바닥부터 시작하는 딥러닝 · 6장</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  const bar=document.getElementById('bar'), count=document.getElementById('count');
+  let cur=0;
+  function show(n){
+    cur=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,i)=>{
+      s.classList.toggle('active',i===cur);
+      s.classList.toggle('prev',i<cur);
+    });
+    bar.style.width=((cur+1)/slides.length*100)+'%';
+    count.textContent=(cur+1)+' / '+slides.length;
+    history.replaceState(null,'','#'+(cur+1));
+  }
+  const next=()=>show(cur+1), prev=()=>show(cur-1);
+  document.getElementById('next').onclick=e=>{e.stopPropagation();next()};
+  document.getElementById('prev').onclick=e=>{e.stopPropagation();prev()};
+  document.addEventListener('keydown',e=>{
+    if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();next()}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();prev()}
+    else if(e.key==='Home')show(0);
+    else if(e.key==='End')show(slides.length-1);
+    else if(e.key==='f'||e.key==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}
+  });
+  let sx=null;
+  document.addEventListener('touchstart',e=>sx=e.touches[0].clientX);
+  document.addEventListener('touchend',e=>{
+    if(sx===null)return; const d=e.changedTouches[0].clientX-sx;
+    if(Math.abs(d)>50){d<0?next():prev()} sx=null;
+  });
+  show((parseInt(location.hash.slice(1))||1)-1);
+</script>
+</body>
+</html>
