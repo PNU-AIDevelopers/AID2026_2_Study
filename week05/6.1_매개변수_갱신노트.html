@@ -1,0 +1,907 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>6.1 매개변수 갱신 노트</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column (≈720px) with figures allowed to widen to 960px; a lab-notebook feel — grid paper hint, margin labels for section numbers. */
+:root{
+  --paper:#f6f7f5; --sheet:#fcfcfb; --ink:#14181f; --ink-2:#4b525c; --ink-3:#7a818b;
+  --rule:#dfe2e0; --grid:#e9ecea; --accent:#1f5fae; --accent-soft:#e3ecf8; --code-bg:#eef1ef;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --warn:#b4471f;
+  --f-display:"Gowun Batang", "Noto Serif KR", serif;
+  --f-body:"IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#15181c; --sheet:#1b1f24; --ink:#eceef0; --ink-2:#b9bec5; --ink-3:#8a9099;
+  --rule:#2e343b; --grid:#21262c; --accent:#7fb0ef; --accent-soft:#1f2c3d; --code-bg:#20252b;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --warn:#f08a5d; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --paper:#15181c; --sheet:#1b1f24; --ink:#eceef0; --ink-2:#b9bec5; --ink-3:#8a9099;
+  --rule:#2e343b; --grid:#21262c; --accent:#7fb0ef; --accent-soft:#1f2c3d; --code-bg:#20252b;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --warn:#f08a5d; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.72;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+.wrap{max-width:960px;margin:0 auto}
+.col{max-width:720px}
+header{padding-block:48px 28px;border-bottom:1px solid var(--rule);margin-bottom:8px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;color:var(--ink-3);text-transform:uppercase}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(30px,5vw,44px);line-height:1.25;margin:10px 0 12px;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:700;font-size:28px;line-height:1.3;margin:0 0 6px;text-wrap:balance}
+h3{font-size:18px;font-weight:600;margin:32px 0 6px}
+p{margin:0 0 14px}
+.lede{font-size:17px;color:var(--ink-2);max-width:640px}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+nav.toc a{font-size:13px;color:var(--ink-2);text-decoration:none;border:1px solid var(--rule);background:var(--sheet);padding:4px 10px;border-radius:999px}
+nav.toc a:hover,nav.toc a:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+section{padding-block:40px 8px;border-bottom:1px solid var(--rule)}
+.sec-no{font-family:var(--f-mono);font-size:13px;color:var(--accent);letter-spacing:.04em}
+.muted{color:var(--ink-3);font-size:14px}
+code{font-family:var(--f-mono);font-size:.88em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+pre{font-family:var(--f-mono);font-size:13px;line-height:1.6;background:var(--code-bg);padding:14px 16px;border-radius:8px;overflow-x:auto;margin:0 0 16px;max-width:100%}
+pre code{background:none;padding:0}
+pre .c{color:var(--ink-3)} pre .k{color:var(--accent);font-weight:600} pre .hl{background:var(--accent-soft);display:inline-block;width:100%}
+strong{font-weight:600}
+.key{background:linear-gradient(transparent 62%,var(--accent-soft) 62%)}
+ul,ol{padding-left:22px;margin:0 0 14px} li{margin:4px 0}
+.tw{overflow-x:auto;margin:0 0 18px}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:520px}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--rule)}
+th{font-weight:600;color:var(--ink-2);font-size:13px;background:var(--sheet)}
+td code{white-space:nowrap}
+.num{font-variant-numeric:tabular-nums;font-family:var(--f-mono);font-size:13px}
+figure{margin:18px 0 26px;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:16px 16px 12px}
+figcaption{font-size:13.5px;color:var(--ink-2);margin-top:8px}
+figcaption b{color:var(--ink);font-weight:600}
+.fig-title{font-weight:600;font-size:15px;margin-bottom:2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--ink-2);margin:4px 0 6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:16px;height:3px;border-radius:2px;display:inline-block}
+.legend i.dash{background:repeating-linear-gradient(90deg,currentColor 0 5px,transparent 5px 8px)!important}
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{fill:var(--ink-3);font-family:var(--f-mono);font-size:11px}
+.chart .gridl{stroke:var(--grid);stroke-width:1}
+.chart .axis{stroke:var(--rule);stroke-width:1}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--paper);font-size:12px;font-family:var(--f-mono);padding:6px 8px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-110%);opacity:0;transition:opacity .1s;z-index:3;line-height:1.5}
+.tip.on{opacity:1}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.grid2>*,.grid3>*{min-width:0}
+.tile{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:14px 16px}
+.tile .big{font-family:var(--f-display);font-size:34px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums}
+.tile .lbl{font-size:13px;color:var(--ink-2)}
+.tile.hero .big{color:var(--accent)}
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;font-size:14.5px;margin:0 0 16px}
+.case{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:16px 18px}
+.case h4{margin:0 0 4px;font-size:16px;font-weight:600}
+.case .from{font-family:var(--f-mono);font-size:12px;color:var(--accent);margin-bottom:6px}
+.case p{font-size:14.5px;margin:0 0 8px} .case p:last-child{margin:0}
+.loop svg text{font-family:var(--f-body)}
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:6px 0 10px;font-size:14px}
+.ctrl button{font:inherit;font-size:13px;border:1px solid var(--rule);background:var(--paper);color:var(--ink);padding:4px 10px;border-radius:6px;cursor:pointer}
+.ctrl button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.ctrl button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ctrl input[type=range]{flex:1;min-width:140px;accent-color:var(--accent)}
+.readout{font-family:var(--f-mono);font-size:13px;color:var(--ink-2)}
+.check li{list-style:none;position:relative;padding-left:4px}
+.check{padding-left:18px}
+.check li::before{content:"";position:absolute;left:-16px;top:.62em;width:8px;height:8px;border-radius:2px;background:var(--accent)}
+.sm{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.sm>div{min-width:0}
+.sm .smt{font-size:13px;font-weight:600;margin-bottom:2px}
+.bd rect{fill:var(--paper);stroke:var(--rule);stroke-width:1.5}
+.bd rect.fw{fill:var(--accent-soft);stroke:var(--accent)}
+.bd text{font-family:var(--f-body)}
+.bd .h{font-size:16px;font-weight:600;fill:var(--ink)}
+.bd .t{font-size:13.5px;fill:var(--ink)}
+.bd .s{font-size:12px;fill:var(--ink-3)}
+.bd .em{font-size:14px;font-weight:600;fill:var(--accent)}
+.bd .b1{font-size:13px;fill:var(--s1)} .bd .b2{font-size:13px;fill:var(--s2)}
+.bd .arr{stroke:var(--ink-3);stroke-width:1.5;fill:none;marker-end:url(#arB)}
+.bd .fwd{stroke:var(--s1);stroke-width:2;marker-end:none}
+.bd .bwd{stroke:var(--s2);stroke-width:2;marker-end:none}
+.guide{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:12px 0 4px}
+.guide div{background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:10px 12px;font-size:13.5px;min-width:0}
+.guide b{display:block;font-size:13px;margin-bottom:2px}
+.plain{font-size:13.5px;color:var(--ink-2);border-top:1px dashed var(--rule);padding-top:8px;margin-top:8px}
+.plain b{color:var(--ink)}
+p code,li code,h4 code{overflow-wrap:anywhere}
+.steps{padding-left:22px}
+.steps li{margin:0 0 14px}
+.src{display:inline-block;font-size:12px;color:var(--accent);font-family:var(--f-mono)}
+.qnav{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.qnav a{font-size:12.5px;color:var(--ink-2);text-decoration:none;border:1px solid var(--rule);background:var(--sheet);padding:3px 9px;border-radius:999px}
+.qnav a:hover,.qnav a:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+.qa-box{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:4px 18px 6px;margin:8px auto 22px 0}
+.qa-box .qa-topic{border-bottom:0;margin-bottom:0;color:var(--accent)}
+.qa-box .qa:last-child{border-bottom:0}
+.qa-group{margin-top:26px}
+.qa-topic{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;color:var(--ink-3);text-transform:uppercase;border-bottom:1px solid var(--rule);padding-bottom:4px;margin-bottom:6px}
+.qa{padding:14px 0 6px;border-bottom:1px dashed var(--rule);scroll-margin-top:16px}
+.qa:last-child{border-bottom:0}
+.qa .q{margin:0 0 8px;font-size:17px;display:flex;gap:10px;align-items:baseline}
+.qa .q::before{content:"Q";font-family:var(--f-display);font-weight:700;color:var(--accent);font-size:20px;flex:none}
+.qa p,.qa ul{font-size:15px}
+.refs{font-size:13px;color:var(--ink-2);padding-left:18px}
+.refs a{color:var(--accent)}
+footer{padding-top:28px;font-size:13px;color:var(--ink-3)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style>
+/* extra components for the 5.4–5.5 note */
+:root{--warn-soft:#fbeae2;--ok:#1d7f55;--ok-soft:#ddf2e8}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--warn-soft:#3a2419;--ok:#5fcf9a;--ok-soft:#17352a}}
+:root[data-theme="dark"]{--warn-soft:#3a2419;--ok:#5fcf9a;--ok-soft:#17352a}
+
+.rule2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:10px 0 18px}
+.rule2>div{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:12px 16px;min-width:0}
+.rule2 b{display:block;font-size:15px;margin-bottom:2px}
+.rule2 .f{font-family:var(--f-mono);font-size:13px;color:var(--accent)}
+.gs .ctrl{margin:0 0 8px}
+.gs-counter{font-family:var(--f-mono);font-size:13px;color:var(--ink-2);min-width:4.5em}
+.gs-panel{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px;margin-top:10px}
+@media (max-width:640px){.gs-panel{grid-template-columns:1fr}}
+.gs-explain,.gs-mem{background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:10px 14px;font-size:14px;min-width:0}
+.gs-explain .t{font-weight:600;font-size:15px;margin-bottom:4px}
+.gs-explain .phase{display:inline-block;font-family:var(--f-mono);font-size:11px;padding:1px 7px;border-radius:999px;margin-right:6px;vertical-align:1px}
+.phase.fw{background:var(--accent-soft);color:var(--s1)}
+.phase.bw{background:var(--warn-soft);color:var(--warn)}
+.phase.prep{background:var(--code-bg);color:var(--ink-3)}
+.gs-mem .t{font-size:12px;font-family:var(--f-mono);color:var(--ink-3);margin-bottom:4px;letter-spacing:.04em}
+.gs-mem div.r{display:flex;justify-content:space-between;gap:10px;font-family:var(--f-mono);font-size:12.5px;padding:3px 0;border-bottom:1px dashed var(--rule)}
+.gs-mem div.r:last-child{border-bottom:0}
+.gs-mem div.r span:first-child{color:var(--ink-2)}
+.gs-code{margin:10px 0 0}
+.gs-code .ln{display:block;padding:0 6px;margin:0 -6px;border-radius:4px}
+.gs-code .ln.on{background:var(--accent-soft);color:var(--ink);font-weight:600}
+.gsvg text{font-family:var(--f-mono)}
+.leg2{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--ink-2);margin:2px 0 6px}
+.leg2 span{display:inline-flex;align-items:center;gap:6px}
+.leg2 i{width:18px;height:3px;border-radius:2px;display:inline-block}
+.cmp td:first-child{font-weight:600;white-space:nowrap}
+.grids{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:8px 0 6px}
+.grids>div{min-width:0}
+.grids .gt{font-size:12.5px;font-weight:600;margin-bottom:4px}
+.grids .gs2{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-3);margin-top:4px}
+.mx{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.mx span{font-family:var(--f-mono);font-size:14px;text-align:center;padding:8px 0;border-radius:6px;background:var(--paper);border:1px solid var(--rule)}
+.mx span.off{background:var(--code-bg);color:var(--ink-3);border-style:dashed}
+.mx span.t{color:var(--warn);font-weight:600}
+.mx span.p{color:var(--s1);font-weight:600}
+.mx span.b{color:var(--warn);font-weight:600}
+.deriv{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:14px 16px;margin:0 0 18px;overflow-x:auto}
+.deriv .ln{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:baseline;padding:6px 0;border-bottom:1px dashed var(--rule)}
+.deriv .ln:last-child{border-bottom:0}
+.deriv .m{font-family:var(--f-mono);font-size:14px;white-space:nowrap}
+.deriv .why{font-size:13px;color:var(--ink-2);text-align:right}
+@media (max-width:560px){.deriv .ln{grid-template-columns:1fr}.deriv .why{text-align:left}}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:12px;padding:2px 9px;border-radius:999px;font-weight:600}
+.pill.on{background:var(--ok-soft);color:var(--ok)}
+.pill.off{background:var(--code-bg);color:var(--ink-3)}
+</style>
+<style>
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:12px 0 20px}
+.flow>div{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:12px 14px;min-width:0;position:relative}
+.flow .n{font-family:var(--f-mono);font-size:11px;color:var(--ink-3)}
+.flow b{display:block;font-size:15px;margin:2px 0}
+.flow p{margin:0;font-size:13.5px;color:var(--ink-2)}
+.quote{border-left:3px solid var(--rule);padding:4px 0 4px 16px;color:var(--ink-2);font-size:15px;margin:0 0 16px}
+.eq{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;margin:0 0 16px;display:grid;gap:6px;overflow-x:auto}
+.eq .row{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+.eq .m{font-family:var(--f-mono);font-size:16px;white-space:nowrap}
+.eq .tag{font-family:var(--f-mono);font-size:12px;color:var(--ink-3);white-space:nowrap}
+.pp{position:relative}
+.pp svg{display:block;width:100%;height:auto}
+.pp text{font-family:var(--f-mono);font-size:10.5px;fill:var(--ink-3);paint-order:stroke;stroke:var(--sheet);stroke-width:4px;stroke-linejoin:round}
+.quad{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:12px}
+@media (max-width:820px){.quad{grid-template-columns:1fr}}
+.quad>div{min-width:0;background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:10px 12px}
+.quad .qt{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:600;font-size:14px;margin-bottom:4px}
+.quad .qt span{font-family:var(--f-mono);font-size:12px;font-weight:400;color:var(--ink-2)}
+.quad .lr{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2);margin-top:4px}
+.quad .lr input{flex:1;min-width:80px;accent-color:var(--accent)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:0}
+td.up{color:var(--s1)} td.dn{color:var(--warn)}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">밑바닥부터 시작하는 딥러닝 · 6장 학습 관련 기술들 · pp.189–202</div>
+  <h1>6.1 매개변수 갱신</h1>
+  <nav class="toc" aria-label="목차">
+    <a href="#intro">최적화란</a><a href="#adv">6.1.1 모험가</a><a href="#sgd">6.1.2 SGD</a><a href="#weak">6.1.3 SGD의 단점</a><a href="#mom">6.1.4 모멘텀</a><a href="#ada">6.1.5 AdaGrad</a><a href="#adam">6.1.6 Adam</a><a href="#which">6.1.7 비교</a><a href="#mnist">6.1.8 MNIST</a><a href="#sum">정리</a>
+  </nav>
+</header>
+
+<section id="intro">
+  <div class="sec-no">6.1 · p.189</div>
+  <h2>최적화: 손실이 가장 낮은 곳을 찾는 문제</h2>
+  <div class="col">
+  <p>신경망 학습의 목적은 <strong>손실 함수의 값을 가능한 한 낮추는 매개변수(가중치·편향)를 찾는 것</strong>이에요. 이 문제를 푸는 것을 <span class="key">최적화(optimization)</span>라고 해요.</p>
+  <p>최적화는 아주 어려운 문제예요.</p>
+  <ul>
+    <li>매개변수 공간이 매우 넓고 복잡해서 최적의 값을 쉽게 찾을 수 없어요.</li>
+    <li>방정식을 풀어 최솟값을 한 번에 구하는 방법 같은 건 없어요.</li>
+    <li>신경망이 깊어질수록 매개변수 수가 엄청나게 많아져서 더 어려워져요.</li>
+  </ul>
+  <p>4장과 5장에서는 매개변수의 <strong>기울기(미분)</strong>를 단서로 썼어요. 기울기를 구하고, 기울어진 방향으로 매개변수를 조금 갱신하는 일을 여러 번 반복해서 최적의 값에 다가갔죠. 이게 <strong>확률적 경사 하강법(SGD)</strong>이에요. SGD는 단순하지만 매개변수 공간을 무작정 찾는 것보다는 똑똑한 방법이에요. 그런데 문제에 따라서는 SGD보다 더 똑똑한 방법이 있어요. 6.1절은 SGD의 단점을 확인하고, 그 단점을 고친 세 가지 방법을 배우는 절이에요.</p>
+  </div>
+  <div class="flow">
+    <div><span class="n">6.1.2 – 6.1.3</span><b>SGD</b><p>기울어진 방향으로 일정 거리만큼 이동. 방향마다 기울기가 다르면 지그재그로 비효율적</p></div>
+    <div><span class="n">6.1.4</span><b>모멘텀</b><p>속도 v를 도입해 공이 굴러가듯 이동. 같은 방향으로는 가속, 왔다 갔다 하는 방향은 상쇄</p></div>
+    <div><span class="n">6.1.5</span><b>AdaGrad</b><p>매개변수마다 학습률을 따로 조절. 많이 움직인 매개변수는 학습률을 낮춤</p></div>
+    <div><span class="n">6.1.6</span><b>Adam</b><p>모멘텀과 AdaGrad를 합친 방법. 요즘 가장 많이 쓰이는 기본 선택지</p></div>
+  </div>
+</section>
+
+<section id="adv">
+  <div class="sec-no">6.1.1 · p.190</div>
+  <h2>모험가 이야기</h2>
+  <div class="col">
+  <p>책은 최적화가 처한 상황을 모험가에 비유해요.</p>
+  <div class="quote">광활한 메마른 산맥을 여행하면서 가장 깊고 낮은 골짜기를 찾으려는 모험가가 있어요. 그런데 이 모험가에게는 엄격한 제약이 두 개 있어요. 지도를 보지 않을 것, 그리고 눈가리개를 쓸 것. 그러니 가장 낮은 골짜기가 광대한 땅 어디에 있는지 알 수 없어요. 이런 조건에서 어떻게 "깊은 곳"을 찾아갈 수 있을까요?</div>
+  <p>신경망의 최적화도 똑같아요. 지도 없이, 눈을 가린 채로 깊은 곳을 찾아야 해요. 이때 단서가 되는 게 <strong>땅의 기울기</strong>예요. 주위 경치는 볼 수 없지만, 지금 서 있는 땅이 어느 쪽으로 기울어 있는지는 발바닥으로 느낄 수 있어요. 그래서 <strong>지금 서 있는 곳에서 가장 크게 기울어진 방향으로 가자</strong>는 게 SGD의 전략이에요. 이걸 반복하면 언젠가 깊은 곳에 도착할지도 몰라요.</p>
+  </div>
+  <div class="tw col"><table>
+    <thead><tr><th>모험가 이야기</th><th>신경망 학습</th></tr></thead>
+    <tbody>
+      <tr><td>가장 깊은 골짜기</td><td>손실 함수의 최솟값 (가장 좋은 매개변수)</td></tr>
+      <tr><td>지도가 없고 눈을 가렸음</td><td>손실 함수의 전체 모양을 알 수 없음</td></tr>
+      <tr><td>발바닥으로 느끼는 땅의 기울기</td><td>지금 매개변수에서 구한 기울기 ∂L/∂W</td></tr>
+      <tr><td>한 걸음 내딛기</td><td>매개변수 갱신 한 번</td></tr>
+      <tr><td>보폭</td><td>학습률 η</td></tr>
+    </tbody></table></div>
+</section>
+
+<section id="sgd">
+  <div class="sec-no">6.1.2 · pp.190–192</div>
+  <h2>확률적 경사 하강법 (SGD)</h2>
+  <div class="col"><p>먼저 SGD를 복습해요. 수식은 이렇게 써요.</p></div>
+  <div class="eq col">
+    <div class="row"><span class="m">W ← W − η · ∂L/∂W</span><span class="tag">식 6.1</span></div>
+  </div>
+  <div class="tw col"><table style="min-width:420px">
+    <thead><tr><th style="width:22%">기호</th><th>뜻</th></tr></thead>
+    <tbody>
+      <tr><td><code>W</code></td><td>갱신할 가중치 매개변수</td></tr>
+      <tr><td><code>∂L/∂W</code></td><td>W에 대한 손실 함수의 기울기</td></tr>
+      <tr><td><code>η</code> (에타)</td><td>학습률. 실제로는 0.01이나 0.001처럼 미리 정해서 써요</td></tr>
+      <tr><td><code>←</code></td><td>오른쪽 값으로 왼쪽 값을 갱신한다는 뜻</td></tr>
+    </tbody></table></div>
+  <div class="col">
+  <p>기울어진 방향(정확히는 기울기의 반대 방향)으로 <strong>일정 거리만큼</strong> 가겠다는 단순한 방법이에요. 이걸 파이썬 클래스로 만들어요.</p>
+<pre><code><span class="k">class</span> SGD:
+    <span class="k">def</span> __init__(self, lr=0.01):
+        self.lr = lr                          <span class="c"># 학습률</span>
+
+    <span class="k">def</span> update(self, params, grads):
+        <span class="k">for</span> key <span class="k">in</span> params.keys():
+            params[key] -= self.lr * grads[key]   <span class="c"># 식 6.1 그대로</span></code></pre>
+  <ul>
+    <li><code>__init__</code>이 받는 <code>lr</code>은 learning rate(학습률)예요. 인스턴스 변수로 저장해 둬요.</li>
+    <li><code>update(params, grads)</code>는 SGD 과정에서 반복해서 불려요. <code>params</code>와 <code>grads</code>는 지금까지처럼 딕셔너리예요. <code>params['W1']</code>, <code>grads['W1']</code> 식으로 가중치와 기울기가 들어 있어요.</li>
+  </ul>
+  <p>이 클래스를 쓰면 신경망의 매개변수 갱신을 이렇게 할 수 있어요(실제로 돌아가는 코드가 아니라 흐름을 보여주는 코드예요).</p>
+<pre><code>network = TwoLayerNet(...)
+optimizer = SGD()
+
+<span class="k">for</span> i <span class="k">in</span> range(10000):
+    ...
+    x_batch, t_batch = get_mini_batch(...)        <span class="c"># 미니배치</span>
+    grads = network.gradient(x_batch, t_batch)   <span class="c"># 역전파로 기울기 구하기</span>
+    params = network.params
+<span class="hl">    optimizer.update(params, grads)               <span class="c"># 갱신은 optimizer에게 맡김</span></span>
+    ...</code></pre>
+  <p><strong>optimizer</strong>는 "최적화를 행하는 자"라는 뜻이에요. 이 코드에서는 SGD가 그 역할을 해요. 매개변수 갱신은 optimizer가 책임지고, 우리는 매개변수와 기울기 정보만 넘겨주면 돼요.</p>
+  <h3>optimizer 클래스를 따로 두는 이유</h3>
+  <p><strong>옵티마이저(optimizer)</strong>는 "최적화를 하는 자", 즉 매개변수 갱신을 맡는 <strong>역할의 이름</strong>이에요. 정해진 함수나 라이브러리 이름이 아니에요. 이 책에서는 우리가 직접 짠 클래스들(<code>common/optimizer.py</code>의 <code>SGD</code>, <code>Momentum</code>, <code>AdaGrad</code>, <code>Adam</code>)이 그 역할을 하고, PyTorch에서는 라이브러리가 미리 만들어 둔 <code>torch.optim.SGD</code>, <code>torch.optim.Adam</code> 같은 클래스를 가져다 써요.</p>
+  <p>클래스는 설계도이고, <code>SGD()</code>는 그 설계도로 실물(객체)을 하나 만드는 코드예요. <code>optimizer = SGD()</code>는 만든 실물을 <code>optimizer</code>라는 변수에 담아 두는 거예요. <code>optimizer.update(params, grads)</code>를 부르면 마법처럼 알아서 처리되는 게 아니라, 클래스 안에 적어 둔 코드가 그대로 실행돼요. SGD라면 <code>params[key] -= self.lr * grads[key]</code> 한 줄이 돌아가요.</p>
+  <p>"따로 둔다"는 건 갱신 공식을 학습 루프 안에 직접 쓰지 않고, 별도의 클래스(별도 파일)로 빼 둔다는 뜻이에요. 사실 4장에서는 따로 두지 않았어요. 4.5절의 학습 코드에는 SGD 공식이 루프 안에 그대로 들어 있어요.</p>
+  <div class="grid2">
+<pre><code><span class="c"># 4장 방식: 갱신 공식이 루프 안에</span>
+<span class="k">for</span> i <span class="k">in</span> range(iters_num):
+    grad = network.gradient(x_batch, t_batch)
+    <span class="k">for</span> key <span class="k">in</span> (<span>'W1'</span>, <span>'b1'</span>, <span>'W2'</span>, <span>'b2'</span>):
+        network.params[key] -= lr * grad[key]</code></pre>
+<pre><code><span class="c"># 따로 두지 않고 모멘텀으로 바꾸려면</span>
+v = {}                               <span class="c"># 속도를 루프 밖에 준비</span>
+<span class="k">for</span> key <span class="k">in</span> (<span>'W1'</span>, <span>'b1'</span>, <span>'W2'</span>, <span>'b2'</span>):
+    v[key] = np.zeros_like(network.params[key])
+<span class="k">for</span> i <span class="k">in</span> range(iters_num):
+    grad = network.gradient(x_batch, t_batch)
+    <span class="k">for</span> key <span class="k">in</span> (<span>'W1'</span>, <span>'b1'</span>, <span>'W2'</span>, <span>'b2'</span>):
+        v[key] = 0.9 * v[key] - lr * grad[key]
+        network.params[key] += v[key]</code></pre>
+  </div>
+  <p>SGD 하나만 쓸 때는 왼쪽처럼 써도 충분해요. 하지만 방법을 바꿀 때마다 오른쪽처럼 기억할 값(<code>v</code>, <code>h</code> 등)을 루프 밖에 따로 만들고 공식을 갈아엎어야 해요. 갱신 방법을 클래스로 따로 두면 공식과 기억할 값이 전부 클래스 안에 들어가서, 학습 코드는 항상 같은 모양으로 남아요.</p>
+<pre><code>optimizer = Momentum()                       <span class="c"># ① 바꿀 건 이 줄뿐</span>
+<span class="k">for</span> i <span class="k">in</span> range(iters_num):
+    grad = network.gradient(x_batch, t_batch)
+    optimizer.update(network.params, grad)   <span class="c"># ② 이 줄은 항상 그대로</span></code></pre>
+  <p>"한 줄만 바꾸면 갱신 방법이 바뀐다"는 말이 이 뜻이에요. ②번의 <code>update</code> 호출은 늘 같지만, 실제로 실행되는 공식은 ①번에서 무엇을 만들었느냐에 따라 달라요. 클래스마다 <code>update</code> 안에 다른 공식이 들어 있기 때문이에요. 예를 들어 가중치 3, 기울기 6, 학습률 0.1일 때 같은 <code>update</code>를 한 번 부르면, <code>SGD()</code>를 만들었을 때는 3 − 0.1 × 6 = <strong>2.4</strong>가 되고, <code>AdaGrad()</code>를 만들었을 때는 3 − 0.1 × 6 / √36 = <strong>2.9</strong>가 돼요. TV 리모컨의 재생 버튼은 같아도 연결한 기기에 따라 다른 화면이 나오는 것과 같아요.</p>
+  <div class="tw"><table style="min-width:440px">
+    <thead><tr><th></th><th>따로 두지 않음 (4장 방식)</th><th>클래스로 따로 둠 (6장 방식)</th></tr></thead>
+    <tbody>
+      <tr><td>갱신 공식이 있는 곳</td><td>학습 루프 안</td><td>optimizer 클래스 안</td></tr>
+      <tr><td>모멘텀의 v 같은 기억값</td><td>루프 밖에 직접 만들어 관리</td><td>클래스가 <code>self.v</code>로 보관</td></tr>
+      <tr><td>방법을 바꾸려면</td><td>루프 코드를 고쳐 씀</td><td><code>optimizer = ...</code> 한 줄만 바꿈</td></tr>
+      <tr><td>역할</td><td>뒤섞여 있음</td><td>신경망은 기울기 계산, optimizer는 갱신만 담당</td></tr>
+    </tbody></table></div>
+  <p>모든 optimizer가 <code>update(params, grads)</code>라는 같은 규격을 가지니까 USB-C 충전기처럼 아무거나 꽂아 쓸 수 있는 거예요. 5장에서 모든 계층에 <code>forward/backward</code>를 똑같이 둔 것과 같은 설계예요.</p>
+  <p class="muted">대부분의 딥러닝 프레임워크도 다양한 최적화 방법을 이런 구조로 제공해요. 책은 Lasagne라는 프레임워크의 updates.py를 예로 들어요. PyTorch에서도 <code>torch.optim.SGD</code>, <code>torch.optim.Adam</code> 중 하나를 골라 만들고 <code>optimizer.step()</code>을 부르는 같은 구조예요.</p>
+  </div>
+</section>
+
+<section id="weak">
+  <div class="sec-no">6.1.3 · pp.192–194</div>
+  <h2>SGD의 단점: 방향마다 기울기가 다르면 지그재그</h2>
+  <div class="col">
+  <p>SGD는 단순하고 구현도 쉽지만, 문제에 따라서는 비효율적일 때가 있어요. 다음 함수의 최솟값을 구하는 문제로 확인해 봐요.</p>
+  </div>
+  <div class="eq col">
+    <div class="row"><span class="m">f(x, y) = (1/20)·x² + y²</span><span class="tag">식 6.2</span></div>
+  </div>
+  <div class="col">
+  <p>이 함수는 <strong>밥그릇을 x축 방향으로 길게 늘인 모양</strong>이에요. 위에서 내려다본 등고선은 x축 방향으로 늘어난 타원이에요(그림 6-1). 최솟값은 (0, 0)에 있어요.</p>
+  <p>기울기를 구해 보면 방향마다 크기가 아주 달라요.</p>
+  </div>
+  <div class="eq col">
+    <div class="row"><span class="m">∂f/∂x = x / 10</span><span class="tag">x 방향: 완만함</span></div>
+    <div class="row"><span class="m">∂f/∂y = 2y</span><span class="tag">y 방향: 가파름</span></div>
+  </div>
+
+  <figure>
+    <div class="fig-title">f(x, y) = x²/20 + y²의 등고선과 기울기 (그림 6-1, 6-2)</div>
+    <div class="pp"><svg id="figField" viewBox="0 0 760 330" role="img" aria-label="x방향으로 늘어난 타원 등고선과, 대부분 위아래를 향하는 기울기 화살표"></svg></div>
+    <figcaption>회색 타원은 등고선(높이가 같은 점들), 화살표는 각 점에서 <b>기울기의 반대 방향</b>(SGD가 실제로 움직이는 방향)이에요. 화살표 대부분이 <b>위아래</b>를 향하고, 최솟값인 (0, 0)을 가리키지 않아요.</figcaption>
+  </figure>
+  <div class="col">
+  <p>책이 짚는 특징은 두 가지예요.</p>
+  <ul>
+    <li><strong>y축 방향은 크고 x축 방향은 작아요.</strong> y 방향은 가파르고 x 방향은 완만하다는 뜻이에요. 예를 들어 출발점 (−7, 2)에서 기울기는 (−0.7, 4)로, y 쪽이 x 쪽보다 약 6배 커요.</li>
+    <li><strong>기울기 대부분이 (0, 0)을 가리키지 않아요.</strong> 최솟값은 (0, 0)인데, 화살표는 대부분 x축(y = 0인 선)을 향해 거의 수직으로 서 있어요.</li>
+  </ul>
+  <p>이 함수에 SGD를 적용해 봐요. 출발점은 (x, y) = (−7.0, 2.0)이에요.</p>
+  </div>
+  <figure>
+    <div class="fig-title">SGD의 최적화 갱신 경로 (그림 6-3)</div>
+    <div class="pp"><svg id="figSGD" viewBox="0 0 760 300" role="img" aria-label="SGD 경로: 위아래로 크게 지그재그하며 천천히 원점으로 이동"></svg></div>
+    <figcaption>학습률 0.95로 30번 갱신한 경로예요. 최솟값 (0, 0)까지 <b>심하게 지그재그</b>로 이동해요.</figcaption>
+  </figure>
+  <div class="col">
+  <p>처음 몇 걸음을 숫자로 보면 왜 이렇게 되는지 보여요.</p>
+  <div class="tw"><table style="min-width:460px">
+    <thead><tr><th>걸음</th><th>기울기 (x, y)</th><th>x 이동</th><th>y 이동</th><th>도착 위치</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="num">(−0.70, 4.00)</td><td class="num up">+0.665</td><td class="num dn">−3.80</td><td class="num">(−6.34, −1.80)</td></tr>
+      <tr><td class="num">2</td><td class="num">(−0.63, −3.60)</td><td class="num up">+0.602</td><td class="num dn">+3.42</td><td class="num">(−5.73, 1.62)</td></tr>
+      <tr><td class="num">3</td><td class="num">(−0.57, 3.24)</td><td class="num up">+0.545</td><td class="num dn">−3.08</td><td class="num">(−5.19, −1.46)</td></tr>
+    </tbody></table></div>
+  <p>y 방향은 기울기가 커서 한 번에 너무 멀리 가요. 2에서 출발해 −1.8로, 바닥(y = 0)을 지나쳐 반대편으로 넘어가고, 다음엔 다시 1.62로 넘어와요. 반대로 x 방향은 기울기가 작아서 한 걸음에 0.6 정도밖에 못 가요. 정작 가야 할 x 쪽으로는 조금씩, 갈 필요 없는 y 쪽으로는 크게 왔다 갔다 하는 거예요.</p>
+  <div class="note"><strong>SGD의 단점</strong>은 <strong>비등방성(anisotropy) 함수</strong>, 즉 방향에 따라 성질(기울기)이 달라지는 함수에서 탐색 경로가 비효율적이라는 거예요. 학습률 하나로 두 방향을 다 맞출 수도 없어요. y에 맞춰 학습률을 줄이면 x는 거의 안 움직이고, x에 맞춰 키우면 y는 더 크게 튀어요. 책이 말하는 <strong>근본 원인</strong>은 <strong>기울어진 방향이 본래의 최솟값과 다른 방향을 가리킨다</strong>는 점이에요.</div>
+  <p>학습률을 작게 하면 y의 지그재그는 줄지만 x 쪽은 더 느려져요. 6.1.7의 SGD 칸에서 학습률을 0.3 정도로 낮춰 보면 y는 금방 0에 붙지만 30걸음 뒤에도 x가 한참 멀리 있어요. 학습률 하나로는 가파른 방향과 완만한 방향을 동시에 맞출 수 없다는 게 SGD의 근본적인 한계예요.</p>
+  <p>이제 SGD의 이런 단점을 개선해 주는 모멘텀, AdaGrad, Adam을 차례로 봐요. 셋 다 SGD를 대체하는 방법이고, 모두 <code>update(params, grads)</code> 하나로 쓸 수 있게 구현해요.</p>
+  </div>
+</section>
+
+<section id="mom">
+  <div class="sec-no">6.1.4 · pp.194–196</div>
+  <h2>모멘텀: 공이 그릇 바닥을 구르듯</h2>
+  <div class="col"><p><strong>모멘텀(Momentum)</strong>은 "운동량"이라는 뜻으로, 물리와 관계가 있어요. 수식은 이렇게 써요.</p></div>
+  <div class="eq col">
+    <div class="row"><span class="m">v ← α·v − η · ∂L/∂W</span><span class="tag">식 6.3</span></div>
+    <div class="row"><span class="m">W ← W + v</span><span class="tag">식 6.4</span></div>
+  </div>
+  <div class="tw col"><table style="min-width:440px">
+    <thead><tr><th style="width:22%">기호</th><th>뜻</th></tr></thead>
+    <tbody>
+      <tr><td><code>v</code></td><td>새로 나온 변수로, 물리에서 말하는 <strong>속도(velocity)</strong>예요. 매개변수가 지금 어느 쪽으로 얼마나 빠르게 움직이는 중인지를 기억해요</td></tr>
+      <tr><td><code>− η·∂L/∂W</code></td><td>이번에 기울기 방향으로 받는 힘. 이 힘을 받아 물체가 가속돼요</td></tr>
+      <tr><td><code>α·v</code></td><td>물체가 아무 힘을 받지 않을 때 서서히 느려지게 하는 항이에요. 지면 마찰이나 공기 저항에 해당해요. α는 보통 <strong>0.9</strong>로 설정해요</td></tr>
+    </tbody></table></div>
+  <div class="col">
+  <p><strong>v는 "지금까지 움직여 온 방향과 빠르기"를 기억해 두는 값</strong>이에요. SGD는 기억이 없어서 걸음마다 발밑 기울기만 보고 새로 움직였어요. 모멘텀은 v를 들고 다니면서 "지난번에 이쪽으로 이만큼 가고 있었지"를 기억해요.</p>
+  <p>두 식을 나란히 놓으면 차이가 분명해요. 모멘텀 식의 <code>− η·∂L/∂W</code>는 SGD가 한 걸음에 움직이는 양과 똑같고, 앞에 <code>α·v</code>가 붙은 것만 달라요. 말로 풀면 이래요.</p>
+  <div class="note"><strong>이번 이동량 = 지난번 이동량 × α(0.9) + 이번 기울기로 정한 이동량(SGD와 같은 부분)</strong><br>α를 0으로 두면 <code>v = −η·∂L/∂W</code>가 되어 SGD와 완전히 같아져요. SGD는 모멘텀에서 관성을 0으로 둔 특수한 경우인 셈이에요. α가 클수록 지난 움직임을 많이 이어받아요.</div>
+  <p>그래서 공이 그릇의 곡면을 따라 구르듯 움직여요(그림 6-4).</p>
+  </div>
+  <figure>
+    <div class="fig-title">모멘텀의 이미지: 공이 그릇의 곡면(기울기)을 따라 구르듯 움직인다 (그림 6-4)</div>
+    <div class="tw" style="margin:0"><svg class="bd" viewBox="0 0 760 170" style="min-width:560px;width:100%" role="img" aria-label="그릇 곡면 위에서 공이 속도를 얻으며 굴러 내려가는 그림">
+      <defs><marker id="arM" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--warn)"/></marker></defs>
+      <path d="M20 30 Q 190 200 360 30" style="fill:none;stroke:var(--ink-3);stroke-width:2"/>
+      <circle cx="78" cy="78" r="13" style="fill:var(--s1)"/>
+      <path d="M94 88 L150 118" style="stroke:var(--warn);stroke-width:2.5;fill:none" marker-end="url(#arM)"/>
+      <text x="40" y="140" class="s">출발: 기울기로 힘을 받아 속도가 붙음</text>
+      <path d="M400 30 Q 570 200 740 30" style="fill:none;stroke:var(--ink-3);stroke-width:2"/>
+      <circle cx="640" cy="88" r="13" style="fill:var(--s1)"/>
+      <path d="M656 80 L712 52" style="stroke:var(--warn);stroke-width:2.5;fill:none" marker-end="url(#arM)"/>
+      <text x="470" y="160" class="s">바닥을 지나도 붙은 속도(관성) 때문에 계속 굴러감</text>
+    </svg></div>
+  </figure>
+
+  <div class="col">
+  <p>실제로 물리 법칙을 계산에 넣는 건 아니에요. 수식은 "이전 이동량의 0.9배 + 이번 이동량"일 뿐인데, 이렇게 하면 굴러가는 공 같은 움직임이 저절로 나와서 물리 용어를 빌려 설명하는 거예요. 굴러가는 공에는 학습에 유용한 성질이 세 가지 있어요.</p>
+  <div class="tw"><table style="min-width:440px">
+    <thead><tr><th>굴러가는 공의 성질</th><th>학습에서 좋은 점</th></tr></thead>
+    <tbody>
+      <tr><td>같은 방향으로 계속 내려가면 점점 빨라짐</td><td>꾸준히 가야 하는 방향(이 예제의 x)으로 빨리 감</td></tr>
+      <tr><td>좌우로 흔들리면 속도가 서로 상쇄됨</td><td>지그재그(이 예제의 y)가 줄어듦</td></tr>
+      <tr><td>작은 턱이나 평평한 곳은 관성으로 지나감</td><td>기울기가 작은 곳에서 멈추지 않고 계속 감</td></tr>
+    </tbody></table></div>
+  </div>
+<div class="col">
+  <h3>왜 지그재그가 줄어드나: 같은 방향은 쌓이고, 반대 방향은 상쇄돼요</h3>
+  <p>η = 0.1, α = 0.9일 때, 기울기가 계속 같은 방향인 경우와 매번 방향이 바뀌는 경우를 비교해 볼게요.</p>
+  <div class="tw"><table style="min-width:480px">
+    <thead><tr><th>걸음</th><th>기울기가 계속 +1일 때 v</th><th>기울기가 +1, −1 번갈아 올 때 v</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="num">−0.100</td><td class="num">−0.100</td></tr>
+      <tr><td class="num">2</td><td class="num">−0.190</td><td class="num">+0.010</td></tr>
+      <tr><td class="num">3</td><td class="num">−0.271</td><td class="num">−0.091</td></tr>
+      <tr><td class="num">4</td><td class="num">−0.344</td><td class="num">+0.018</td></tr>
+      <tr><td class="num">5</td><td class="num">−0.410</td><td class="num">−0.084</td></tr>
+      <tr><td class="num">10</td><td class="num"><b>−0.651</b> (계속 커짐)</td><td class="num"><b>+0.034</b> (작게 유지)</td></tr>
+    </tbody></table></div>
+  <ul>
+    <li><strong>같은 방향으로 계속 밀면</strong> 속도가 쌓여서 점점 빨라져요. SGD라면 한 걸음이 0.1로 고정이지만, 모멘텀은 0.65까지 커졌고 계속 가면 0.1 ÷ (1 − 0.9) = <strong>1.0</strong>, 즉 SGD의 10배까지 빨라져요.</li>
+    <li><strong>방향이 매번 바뀌면</strong> 이전 속도와 새 힘이 서로 상쇄돼서 속도가 작게 유지돼요.</li>
+  </ul>
+  <p>앞의 함수에 그대로 대입하면 이래요. <strong>x 방향</strong>은 기울기가 작지만 항상 같은 방향(오른쪽)이라 속도가 쌓여 가속돼요. <strong>y 방향</strong>은 기울기가 크지만 위아래로 번갈아 바뀌니까 서로 상쇄돼요. 그래서 x 쪽으로는 빠르게 다가가고 y 쪽 지그재그는 줄어들어요.</p>
+
+  <h3>SGD와 숫자로 비교하기</h3>
+  <p><code>L = w²</code>, 시작 w = 3, η = 0.1, α = 0.9로 둘을 나란히 돌려 보면 이래요(SGD 이동량은 SGD 자기 위치의 기울기로 계산했어요).</p>
+  <div class="tw"><table style="min-width:520px">
+    <thead><tr><th>걸음</th><th>SGD 이동</th><th>SGD 위치</th><th>모멘텀 v = 0.9 × (지난 v) − 0.1 × 기울기</th><th>모멘텀 위치</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="num">−0.60</td><td class="num">2.40</td><td class="num">0 − 0.60 = −0.60</td><td class="num">2.40</td></tr>
+      <tr><td class="num">2</td><td class="num">−0.48</td><td class="num">1.92</td><td class="num">−0.54 − 0.48 = −1.02</td><td class="num">1.38</td></tr>
+      <tr><td class="num">3</td><td class="num">−0.38</td><td class="num">1.54</td><td class="num">−0.92 − 0.28 = −1.19</td><td class="num">0.19</td></tr>
+      <tr><td class="num">4</td><td class="num">−0.31</td><td class="num">1.23</td><td class="num">−1.07 − 0.04 = −1.11</td><td class="num dn">−0.93</td></tr>
+    </tbody></table></div>
+  <p>1걸음째는 지난 이동량이 0이라 SGD와 똑같아요. 2~3걸음째에는 지난 이동량이 더해져서 SGD보다 훨씬 크게 움직이고, 3걸음 만에 0.19까지 와요. SGD는 아직 1.54예요. 4걸음째에는 기울기가 거의 0인데도 붙은 속도 때문에 바닥을 지나 −0.93까지 가요. 이게 관성이고, 이후에는 반대쪽 기울기가 속도를 줄여서 다시 돌아와요.</p>
+  <h3>코드 (common/optimizer.py)</h3>
+<pre><code><span class="k">class</span> Momentum:
+    <span class="k">def</span> __init__(self, lr=0.01, momentum=0.9):
+        self.lr = lr
+        self.momentum = momentum                 <span class="c"># 식의 α</span>
+        self.v = <span class="k">None</span>
+
+    <span class="k">def</span> update(self, params, grads):
+<span class="hl">        <span class="k">if</span> self.v <span class="k">is</span> <span class="k">None</span>:                       <span class="c"># 처음 호출될 때만</span></span>
+<span class="hl">            self.v = {}</span>
+<span class="hl">            <span class="k">for</span> key, val <span class="k">in</span> params.items():</span>
+<span class="hl">                self.v[key] = np.zeros_like(val) <span class="c"># 매개변수와 같은 모양의 0 배열</span></span>
+
+        <span class="k">for</span> key <span class="k">in</span> params.keys():
+            self.v[key] = self.momentum*self.v[key] - self.lr*grads[key]   <span class="c"># 식 6.3</span>
+            params[key] += self.v[key]                                     <span class="c"># 식 6.4</span></code></pre>
+  <ul>
+    <li>인스턴스 변수 <code>v</code>가 물체의 속도예요. 초기화 때는 아무 값도 담지 않고(<code>None</code>), <code>update()</code>가 처음 호출될 때 매개변수와 <strong>같은 구조의 데이터</strong>를 딕셔너리로 만들어요. 처음엔 멈춰 있으니까 0으로 채워요.</li>
+    <li>처음에 바로 만들지 않는 이유는, <code>__init__</code> 시점에는 매개변수가 몇 개이고 어떤 모양인지 아직 모르기 때문이에요. <code>params</code>를 받아 봐야 알 수 있어요.</li>
+    <li>나머지 두 줄은 식 6.3과 6.4를 그대로 옮긴 거예요.</li>
+  </ul>
+  </div>
+  <figure>
+    <div class="fig-title">모멘텀에 의한 최적화 갱신 경로 (그림 6-5)</div>
+    <div class="pp"><svg id="figMom" viewBox="0 0 760 300" role="img" aria-label="모멘텀 경로: 공이 구르듯 S자로 원점에 다가감"></svg></div>
+    <figcaption>학습률 0.1, α = 0.9로 30번 갱신한 경로예요.</figcaption>
+  </figure>
+  <div class="col">
+  <p>공이 그릇 바닥을 구르듯 움직여요. SGD와 비교하면 <strong>지그재그 정도가 덜한</strong> 걸 알 수 있어요. x축의 힘은 아주 작지만 방향은 변하지 않아서 한 방향으로 일정하게 가속하기 때문이에요. 거꾸로 y축의 힘은 크지만 위아래로 번갈아 받아서 상충하니까, y축 방향의 속도는 안정적이지 않아요. 전체적으로는 SGD보다 x축 방향으로 빠르게 다가가 지그재그 움직임이 줄어요.</p>
+  <p>다만 공에는 관성이 있어서 바닥을 그대로 지나쳐 갈 수 있어요. 이 경로도 x가 0을 넘어 반대편까지 갔다가 돌아오는 중이에요.</p>
+  <h3>기울기가 작은 곳을 지나가는 힘</h3>
+  <p>SGD의 한 걸음은 <code>학습률 × 기울기</code>라서, 기울기가 작은 곳에서는 거의 멈춰요. 기울기가 작은 곳에는 두 종류가 있어요. 최솟값이라서 평평한 곳이면 멈추는 게 맞아요. 하지만 최솟값이 아닌데 평평한 곳도 있어요. 넓고 완만한 <strong>고원(plateau)</strong>, 한 방향으로는 내리막이 남은 <strong>안장점</strong>, 근처에 더 깊은 골짜기가 있는 <strong>얕은 웅덩이(국소 최솟값)</strong>가 그래요. SGD는 이 둘을 구분하지 못하고 둘 다 거의 멈춰서, 손실 그래프가 한참 동안 평평하게 안 내려가는 구간이 생겨요.</p>
+  <p>모멘텀은 붙은 속도가 있어서 기울기가 작아져도 바로 멈추지 않아요. 기울기가 계속 0.01인 완만한 구간을 학습률 0.1로 지나면, SGD는 한 걸음에 0.001씩만 가지만 모멘텀은 속도가 쌓여서 최대 0.01(SGD의 10배)까지 빨라져요. 작은 웅덩이에서도 SGD는 바닥에서 멈추지만, 모멘텀은 굴러오던 속도로 반대편 턱을 넘어갈 수 있어요.</p>
+  <p>같은 관성 때문에 진짜 최솟값도 지나칠 수 있어서, α는 1보다 작은 0.9 정도로 둬요. α를 1로 하면 마찰이 전혀 없어서 속도가 줄지 않고 쌓이기만 하니까, 바닥을 지나쳐도 멈추지 않고 왔다 갔다를 끝없이 반복하거나 점점 커질 수 있어요. 0.9면 속도가 서서히 줄어서 진짜 바닥에서는 결국 멈춰요.</p>
+  </div>
+</section>
+
+<section id="ada">
+  <div class="sec-no">6.1.5 · pp.196–198</div>
+  <h2>AdaGrad: 매개변수마다 학습률을 따로</h2>
+  <div class="col">
+  <p>신경망 학습에서는 학습률(η) 값이 중요해요. 너무 작으면 학습 시간이 너무 길어지고, 너무 크면 발산해서 학습이 제대로 안 돼요.</p>
+  <p>학습률을 정하는 효과적인 기술로 <strong>학습률 감소(learning rate decay)</strong>가 있어요. 학습을 진행하면서 학습률을 점차 줄여 가는 방법이에요. 처음에는 크게 학습하다가 조금씩 작게 학습한다는 얘기로, 실제 신경망 학습에 자주 쓰여요.</p>
+  <p>학습률을 서서히 낮추는 가장 간단한 방법은 매개변수 <strong>"전체"</strong>의 학습률을 한꺼번에 낮추는 거예요. 이걸 더 발전시킨 게 <strong>AdaGrad</strong>예요. AdaGrad는 <strong>"각각의"</strong> 매개변수에 <strong>"맞춤형"</strong> 학습률을 만들어 줘요. 이름은 Adaptive(적응적) + Gradient(기울기)에서 왔고, 영어식으로 "에이다그래드", 한국에서는 "아다그라드"라고도 많이 읽어요.</p>
+  </div>
+  <div class="eq col">
+    <div class="row"><span class="m">h ← h + ∂L/∂W ⊙ ∂L/∂W</span><span class="tag">식 6.5</span></div>
+    <div class="row"><span class="m">W ← W − η · (1/√h) · ∂L/∂W</span><span class="tag">식 6.6</span></div>
+  </div>
+  <div class="tw col"><table style="min-width:440px">
+    <thead><tr><th style="width:22%">기호</th><th>뜻</th></tr></thead>
+    <tbody>
+      <tr><td><code>h</code></td><td>새로 나온 변수. 지금까지의 기울기 값을 <strong>제곱해서 계속 더해 둔 것</strong>이에요</td></tr>
+      <tr><td><code>⊙</code></td><td>행렬의 원소별 곱셈. 칸마다 같은 위치끼리 곱해요. 그래서 h도 매개변수마다(칸마다) 따로 쌓여요</td></tr>
+      <tr><td><code>1/√h</code></td><td>갱신할 때 곱하는 값. h가 클수록 작아져서 학습률을 낮춰요</td></tr>
+    </tbody></table></div>
+  <div class="col">
+  <p>매개변수 중에서 <strong>많이 움직인(크게 갱신된) 원소는 h가 커지고, 그래서 학습률이 낮아져요.</strong> 학습률 감소가 매개변수의 원소마다 다르게 적용되는 거예요.</p>
+  <p>쉽게 말하면 <strong>지금까지 크게 움직인 매개변수일수록 학습률을 점점 더 줄이는</strong> 방법이에요. h는 계속 쌓이기만 하니까 시간이 갈수록 모든 매개변수의 학습률이 줄고, 그중 기울기가 컸던 매개변수는 빨리, 작았던 매개변수는 천천히 줄어요. 기울기가 크다는 건 그 방향이 가파르다는 뜻이라 큰 보폭으로 가면 바닥을 지나쳐 왔다 갔다 하고(SGD의 y), 기울기가 작은 방향은 완만해서 같은 학습률로는 너무 조금씩만 가요(SGD의 x). 그래서 <strong>가파른 길은 조심조심, 완만한 길은 성큼성큼</strong> 가도록 매개변수마다 보폭을 따로 정해 주는 거예요.</p>
+  <h3>기울기를 제곱해서 더하는 이유</h3>
+  <p>기울기는 +일 수도 −일 수도 있어서, 그냥 더하면 서로 상쇄돼요. 앞 예제의 y 기울기는 4, −3.6, 3.24로 부호가 바뀌었는데, 그냥 더하면 3.64밖에 안 되지만 제곱해서 더하면 16 + 12.96 + 10.5 = 39.5예요. y는 실제로 크게 요동쳤으니 제곱한 쪽이 "얼마나 크게 움직였나"를 제대로 나타내요. 제곱하면 부호가 없어지고 큰 기울기가 더 크게 반영돼요.</p>
+  <p>갱신할 때는 √h로 나눠서 제곱했던 걸 원래 크기로 되돌려요. 그래서 첫 걸음에서는 <code>기울기 ÷ √(기울기²) = ±1</code>이 되어, 기울기가 4든 0.7이든 비슷한 크기로 움직이게 돼요.</p>
+  <h3>앞의 함수로 확인: 가파른 y는 학습률이 작아지고, 완만한 x는 크게 남아요</h3>
+  <p>학습률 η = 1.5로, (−7, 2)에서 출발했을 때 처음 다섯 걸음이에요. "실제 학습률"은 η ÷ √h예요.</p>
+  <div class="tw"><table style="min-width:560px">
+    <thead><tr><th>걸음</th><th>x 기울기</th><th>x의 h</th><th>x의 실제 학습률</th><th>y 기울기</th><th>y의 h</th><th>y의 실제 학습률</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="num">−0.700</td><td class="num">0.49</td><td class="num up">2.14</td><td class="num">4.000</td><td class="num">16.00</td><td class="num dn">0.375</td></tr>
+      <tr><td class="num">2</td><td class="num">−0.550</td><td class="num">0.79</td><td class="num up">1.69</td><td class="num">1.000</td><td class="num">17.00</td><td class="num dn">0.364</td></tr>
+      <tr><td class="num">3</td><td class="num">−0.457</td><td class="num">1.00</td><td class="num up">1.50</td><td class="num">0.272</td><td class="num">17.07</td><td class="num dn">0.363</td></tr>
+      <tr><td class="num">4</td><td class="num">−0.389</td><td class="num">1.15</td><td class="num up">1.40</td><td class="num">0.075</td><td class="num">17.08</td><td class="num dn">0.363</td></tr>
+      <tr><td class="num">5</td><td class="num">−0.334</td><td class="num">1.27</td><td class="num up">1.33</td><td class="num">0.020</td><td class="num">17.08</td><td class="num dn">0.363</td></tr>
+    </tbody></table></div>
+  <p>y는 첫 걸음의 기울기가 4로 커서 h가 단번에 16이 되고, 실제 학습률이 0.375로 확 줄어요. 그래서 y는 몇 걸음 만에 0 근처에 자리를 잡아요. x는 기울기가 작아서 h가 천천히 커지고, 실제 학습률이 1 이상으로 크게 유지돼서 x 쪽으로 꾸준히 이동해요. 방향마다 기울기 크기가 달라서 생기던 SGD의 문제를, 방향마다 학습률을 따로 맞춰 해결한 셈이에요.</p>
+  <div class="note"><strong>AdaGrad의 약점과 RMSProp</strong>: AdaGrad는 과거의 기울기를 제곱해서 <strong>계속 더하기만</strong> 해요. 그래서 학습을 진행할수록 갱신 강도가 약해지고, 무한히 계속 학습하면 어느 순간 갱신량이 0이 되어 전혀 갱신되지 않게 돼요. 이 문제를 개선한 방법이 <strong>RMSProp</strong>이에요. RMSProp은 과거의 모든 기울기를 똑같이 더하지 않고, <strong>먼 과거의 기울기는 서서히 잊고 새로운 기울기 정보를 크게 반영</strong>해요. 이를 <strong>지수이동평균(Exponential Moving Average, EMA)</strong>이라고 하고, 과거 기울기의 반영 비율을 기하급수적으로 줄여요.</div>
+  <p>이 약점은 최솟값을 아예 못 찾는다는 뜻은 아니에요. 6.1.7 비교에서도 AdaGrad가 최솟값에 가장 가까이 갔어요. 문제는 학습이 길어지면 너무 일찍 느려질 수 있다는 거예요. 기울기가 계속 1이고 η = 0.1이면 실제 한 걸음은 1번째에 0.1, 100번째에 0.01, 10,000번째에 0.001로 계속 작아져요. 초반에 기울기가 컸던 매개변수는 h가 이미 크게 쌓여서, 최솟값에 도착하기 전인데도 거의 멈춘 것처럼 될 수 있어요. 그래서 학습을 오래 하거나 문제가 복잡할 때 이 약점이 드러나요.</p>
+  <h3>코드 (common/optimizer.py)</h3>
+<pre><code><span class="k">class</span> AdaGrad:
+    <span class="k">def</span> __init__(self, lr=0.01):
+        self.lr = lr
+        self.h = <span class="k">None</span>
+
+    <span class="k">def</span> update(self, params, grads):
+        <span class="k">if</span> self.h <span class="k">is</span> <span class="k">None</span>:
+            self.h = {}
+            <span class="k">for</span> key, val <span class="k">in</span> params.items():
+                self.h[key] = np.zeros_like(val)
+
+        <span class="k">for</span> key <span class="k">in</span> params.keys():
+            self.h[key] += grads[key] * grads[key]                                  <span class="c"># 식 6.5</span>
+<span class="hl">            params[key] -= self.lr * grads[key] / (np.sqrt(self.h[key]) + 1e-7)    <span class="c"># 식 6.6</span></span></code></pre>
+  <ul>
+    <li><code>h</code>를 처음 호출 때 0으로 만드는 방식은 모멘텀의 <code>v</code>와 같아요.</li>
+    <li><code>grads[key] * grads[key]</code>는 넘파이 배열끼리의 곱이라 원소별 곱셈(⊙)이에요.</li>
+    <li>마지막 줄에서 <strong>1e-7이라는 작은 값을 더하는 것</strong>이 중요해요. <code>self.h[key]</code>에 0이 담겨 있어도 0으로 나누는 사태를 막아 줘요. 대부분의 딥러닝 프레임워크에서는 이 값도 인수로 설정할 수 있어요.</li>
+  </ul>
+  <h3>1e-7이 하는 일</h3>
+  <p>넘파이에서 0을 0으로 나누면 멈추지 않고 <code>nan</code>(숫자가 아님)이 나와요. 가중치에 <code>nan</code>이 한 번 섞이면 이후 계산이 전부 <code>nan</code>이 되어 학습이 조용히 망가져요. 1e-7은 <strong>0으로 나누는 상황을 막는 안전장치</strong>예요.</p>
+<pre><code>&gt;&gt;&gt; np.array([0.0]) / np.array([0.0])
+array([nan])</code></pre>
+  <p>h가 처음에 0이라는 것 자체는 문제가 아니에요. 코드는 ① <code>h += 기울기²</code>를 먼저 하고 ② 나누기를 하니까, 기울기가 조금이라도 있으면 나눌 때 h는 이미 0이 아니에요. 같은 이유로 0이 아닌 수를 0으로 나누는 일도 생기지 않아요. 기울기가 0이 아니면 h는 적어도 그 기울기의 제곱만큼은 있으니까요. 위험한 건 <strong>그 매개변수의 기울기가 0이라서 h가 계속 0으로 남을 때</strong> 생기는 0 ÷ 0 하나뿐이에요.</p>
+  <p>기울기가 0인 경우는 두 가지예요. 이미 최솟값에 있는 경우(예를 들어 처음부터 (0, 0)에서 출발)라면 안 움직이는 게 정답인데, 1e-7이 없으면 0 ÷ 0이 되어 오히려 망가져요. 신경망에서는 신호가 아예 안 흘러서 기울기가 0인 경우도 많아요. MNIST 가장자리 픽셀처럼 입력이 항상 0이거나, ReLU가 꺼져 있어서(5.5절의 mask) 역전파가 막힌 가중치가 그래요.</p>
+  <div class="tw"><table style="min-width:460px">
+    <thead><tr><th>상황</th><th>기울기</th><th>h</th><th>결과</th></tr></thead>
+    <tbody>
+      <tr><td>최솟값에 도착한 매개변수</td><td class="num">0</td><td>지금까지 쌓여서 0 아님</td><td>0 ÷ √h = 0 → 안 움직임 (정상)</td></tr>
+      <tr><td>한 번도 기울기를 못 받은 매개변수</td><td class="num">0</td><td class="num">0</td><td>0 ÷ 0 → <code>nan</code> → 1e-7이 막아 줌</td></tr>
+      <tr><td>보통의 매개변수 (√h = 2)</td><td class="num">1</td><td class="num">4</td><td>1 ÷ 2.0000001 ≈ 0.5 → 영향 거의 없음</td></tr>
+    </tbody></table></div>
+  <p>1e-7은 가중치에 더하는 게 아니라 <strong>나누는 값(분모)에만</strong> 더해요. 기울기가 0이면 분자가 0이라 이동량도 0이 되어 가중치는 제자리에 있고, 평소에는 너무 작은 값이라 결과에 거의 영향이 없어요. Adam 코드의 <code>+ 1e-7</code>도 같은 이유이고, 대부분의 프레임워크에서는 <code>eps</code>(엡실론)라는 인수로 바꿀 수 있어요.</p>
+  <p>최솟값에 가까워지면 기울기가 0에 가까워지니까 이동량도 점점 작아져서, 최솟값 근처에서 거의 멈추게 돼요.</p>
+  </div>
+  <figure>
+    <div class="fig-title">AdaGrad에 의한 최적화 갱신 경로 (그림 6-6)</div>
+    <div class="pp"><svg id="figAda" viewBox="0 0 760 300" role="img" aria-label="AdaGrad 경로: y가 빠르게 0에 붙고 x를 따라 곧게 이동"></svg></div>
+    <figcaption>학습률 1.5로 30번 갱신한 경로예요.</figcaption>
+  </figure>
+  <div class="col">
+  <p>최솟값을 향해 효율적으로 움직여요. y축 방향은 기울기가 커서 처음에는 크게 움직이지만, 그 큰 움직임에 비례해 갱신 정도도 큰 폭으로 작아지도록 조정돼요. 그래서 y축 방향으로 갱신 강도가 빠르게 약해지고, 지그재그 움직임이 줄어요.</p>
+  </div>
+</section>
+
+<section id="adam">
+  <div class="sec-no">6.1.6 · pp.199–200</div>
+  <h2>Adam: 모멘텀과 AdaGrad를 합치면</h2>
+  <div class="col">
+  <p>모멘텀은 공이 그릇 바닥을 구르는 듯한 움직임을 보였어요. AdaGrad는 매개변수의 원소마다 적응적으로 갱신 정도를 조정했어요. 그럼 혹시 이 두 기법을 융합하면 어떨까요? 이런 생각에서 출발한 기법이 <strong>Adam</strong>이에요.</p>
+  <p>Adam은 2015년에 제안된 방법이에요. 이론은 다소 복잡하지만 직관적으로는 <strong>모멘텀과 AdaGrad를 융합한 듯한 방법</strong>이에요. 두 방법의 이점을 조합했으니 매개변수 공간을 효율적으로 탐색해 줄 것으로 기대할 수 있어요. 또 하이퍼파라미터의 <strong>"편향 보정"</strong>이 진행된다는 점도 Adam의 특징이에요. 책은 깊이 들어가지 않고 직관적으로만 설명해요. 아래 식은 원논문의 갱신 규칙을 이해하기 쉽게 정리한 거예요.</p>
+  </div>
+  <div class="col">
+  <p>쉽게 말하면 Adam은 <strong>"어느 방향으로 갈지"는 모멘텀처럼, "얼마나 크게 갈지"는 AdaGrad처럼</strong> 정해요. 그래서 두 가지 값을 기억해요. 하나는 최근 기울기들의 <strong>평균 방향 m</strong>으로, 계속 같은 쪽이면 커지고 왔다 갔다 하면 상쇄돼요(모멘텀의 v 역할). 다른 하나는 최근 기울기 크기(제곱)의 평균 <strong>v</strong>로, 그 방향이 얼마나 가파른지를 나타내요(AdaGrad의 h 역할). 움직일 때는 <code>학습률 × m ÷ √v</code>만큼 가요. 관성 있게 가면서, 길이 가파른 정도에 맞춰 보폭도 조절하는 셈이에요.</p>
+  <p>AdaGrad와 달리 v는 옛날 기울기를 서서히 잊어서(RMSProp 방식) 학습률이 끝없이 줄어들지 않아요. 이름이 헷갈리기 쉬운데, 모멘텀의 <code>v</code>와 Adam의 <code>v</code>는 다른 거예요. 모멘텀의 v는 속도(방향)이고, Adam의 v는 기울기 크기의 평균이에요. Adam에서 모멘텀의 v 역할을 하는 건 <code>m</code>이에요.</p>
+  </div>
+  <div class="eq col">
+    <div class="row"><span class="m">m ← β₁·m + (1 − β₁)·g</span><span class="tag">기울기의 평균 → 모멘텀 역할</span></div>
+    <div class="row"><span class="m">v ← β₂·v + (1 − β₂)·g²</span><span class="tag">기울기 제곱의 평균 → AdaGrad 역할</span></div>
+    <div class="row"><span class="m">m̂ = m / (1 − β₁ᵗ),  v̂ = v / (1 − β₂ᵗ)</span><span class="tag">편향 보정</span></div>
+    <div class="row"><span class="m">W ← W − η · m̂ / (√v̂ + ε)</span><span class="tag">갱신</span></div>
+  </div>
+  <div class="tw col"><table style="min-width:440px">
+    <thead><tr><th style="width:22%">부분</th><th>하는 일</th></tr></thead>
+    <tbody>
+      <tr><td><code>m</code></td><td>기울기 g를 지수이동평균으로 모아 둔 값. 같은 방향으로 계속 밀리면 쌓이고, 번갈아 바뀌면 상쇄돼요. <strong>모멘텀의 v와 같은 역할</strong>이에요</td></tr>
+      <tr><td><code>v</code></td><td>기울기의 제곱을 지수이동평균으로 모아 둔 값. 기울기가 큰 매개변수일수록 커져요. <strong>AdaGrad의 h와 같은 역할</strong>인데, RMSProp처럼 옛날 값은 서서히 잊어요</td></tr>
+      <tr><td><code>m / √v</code></td><td>"방향은 m에서, 보폭 조절은 v로". 기울기가 큰 쪽은 v로 나눠서 줄이고, 작은 쪽은 상대적으로 키워요</td></tr>
+      <tr><td>편향 보정</td><td>m과 v는 0에서 시작하니까 학습 초반에는 평균이 실제보다 작게 나와요. 그래서 초반에만 1 − β^t로 나눠 크기를 키워 줘요. t(반복 횟수)가 커지면 나누는 값이 1에 가까워져 보정이 저절로 사라져요</td></tr>
+    </tbody></table></div>
+  <div class="col">
+  <h3>"이전 값 90% + 새 기울기 10%"인 이유</h3>
+  <p>m의 식 <code>m ← β₁·m + (1 − β₁)·g</code>에 β₁ = 0.9를 넣으면 <code>m ← 0.9·m + 0.1·g</code>, 즉 "이전 값 90% + 새 기울기 10%"가 돼요. Adam이 이렇게 설계된 거예요. 이런 평균 방식을 <strong>지수이동평균</strong>이라고 하고, 목적은 <strong>걸음마다 들쓭날쓭한 기울기에 휘둘리지 않고 최근 흐름을 부드럽게 따라가는 것</strong>이에요.</p>
+  <p>매일의 기분을 "어제까지의 기분 90% + 오늘 있었던 일 10%"로 정한다고 생각해 보세요. 하루 나쁜 일이 있어도 기분이 확 무너지지 않고(들쓭날쓭함을 걸러 냄), 나쁜 일이 며칠 계속되면 기분이 점점 그쪽으로 따라가요(꾸준한 흐름은 반영). 오래된 일은 매일 0.9씩 곱해지면서 서서히 잊혀요. 모든 기울기를 똑같이 평균 내지 않는 이유도 여기 있어요. 그러면 지난 기울기를 다 저장해야 하고 오래전 기울기까지 똑같이 반영되지만, 지수이동평균은 숫자 하나(m)만 들고 있으면 되고 최근 것일수록 더 크게 반영해요. 책의 코드 <code>m += (1 − β₁)(g − m)</code>도 전개하면 같은 식이에요. v는 β₂ = 0.999라서 "이전 값 99.9% + 새 값 0.1%"로, 훨씬 더 천천히 변해요.</p>
+  <h3>편향 보정 쉽게 보기</h3>
+  <p>여기서 "편향"은 신경망의 편향 b와는 상관없어요. 값이 한쪽으로 <strong>치우쳐 나오는 오차</strong>(bias)를 말하고, 편향 보정은 그 치우침을 바로잡는 거예요.</p>
+  <p>m은 0에서 시작해서 매번 "이전 값 90% + 새 기울기 10%"로 갱신돼요. 기울기가 계속 4라면 평균은 4여야 하는데, 0에서 출발한 탓에 처음 몇 걸음은 실제보다 훨씬 작게(0 쪽으로 치우쳐서) 나와요. 이게 "치우친다"는 뜻이에요.</p>
+  <p>새 식당의 별점 평균을 같은 방식(이전 90% + 새 리뷰 10%)으로 계산하는데 시작값을 0점으로 두었다고 해볼게요. 첫 리뷰가 5점이면 평균이 0.9 × 0 + 0.1 × 5 = <strong>0.5점</strong>이 돼요. 리뷰는 5점 하나뿐인데 평균이 0.5점이에요. 시작값 0은 실제 데이터가 아니라 "아직 아무것도 모름"이라고 채워 둔 <strong>가짜 값</strong>인데, 그게 평균을 0 쪽으로 끌어내린 거예요. 걸음마다 평균 안에서 가짜 0이 차지하는 비율을 보면 더 분명해요.</p>
+  <div class="tw"><table style="min-width:420px">
+    <thead><tr><th>걸음 t</th><th>가짜 0의 비율 (0.9^t)</th><th>진짜 기울기의 비율 (1 − 0.9^t)</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="num">90%</td><td class="num">10%</td></tr>
+      <tr><td class="num">2</td><td class="num">81%</td><td class="num">19%</td></tr>
+      <tr><td class="num">10</td><td class="num">35%</td><td class="num">65%</td></tr>
+      <tr><td class="num">50</td><td class="num">0.5%</td><td class="num">99.5%</td></tr>
+    </tbody></table></div>
+  <p>초반에는 평균의 대부분이 가짜 0이라 값이 너무 작게 나와요. 그래서 <strong>진짜 기울기의 비율인 1 − 0.9^t</strong>로 나눠서, 가짜 0이 섞인 만큼을 걷어 내요. 별점 예시라면 0.5 ÷ 0.1 = 5점으로 바로잡혀요.</p>
+  <div class="tw"><table style="min-width:460px">
+    <thead><tr><th>걸음 t</th><th>m = 0.9 × (이전 m) + 0.1 × 4</th><th>1 − 0.9^t</th><th>보정한 m</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="num">0 + 0.4 = 0.4</td><td class="num">0.1</td><td class="num">0.4 ÷ 0.1 = <b>4</b></td></tr>
+      <tr><td class="num">2</td><td class="num">0.36 + 0.4 = 0.76</td><td class="num">0.19</td><td class="num">0.76 ÷ 0.19 = <b>4</b></td></tr>
+      <tr><td class="num">3</td><td class="num">0.68 + 0.4 = 1.08</td><td class="num">0.271</td><td class="num">1.08 ÷ 0.271 ≈ <b>4</b></td></tr>
+    </tbody></table></div>
+  <p>보정하면 처음부터 정확히 4가 나와요. 걸음이 많아지면 0.9^t가 0에 가까워져서 나누는 값이 1이 되니까, <strong>보정은 초반에만 작동하고 저절로 사라져요.</strong></p>
+  <p>v도 같은 방식으로 1 − 0.999^t로 나눠요. v는 이전 값을 99.9%나 남기니까 m보다 훨씬 심하게 0 쪽으로 치우쳐요. 보정하지 않으면 m보다 v가 훨씬 작게 나와서 <code>m ÷ √v</code>가 커지고, 첫 걸음이 학습률의 약 3배로 너무 커져요. 보정하면 첫 걸음이 딱 학습률만큼이 돼요. 아래 표에서 Adam이 처음부터 0.3씩 고르게 움직이는 게 이 보정 덕분이에요. 한마디로 편향 보정은 0에서 시작한 평균값이 학습 초반에 너무 작게 나오는 걸 바로잡아 주는 <strong>시동 장치</strong>예요.</p>
+  <h3>앞의 함수로 확인: Adam은 방향마다 비슷한 보폭으로 움직여요</h3>
+  <p>학습률 0.3으로 (−7, 2)에서 출발했을 때 처음 다섯 걸음의 이동량이에요. 같은 출발점에서 SGD의 첫 걸음은 x로 +0.665, y로 −3.80이었어요.</p>
+  <div class="tw"><table style="min-width:440px">
+    <thead><tr><th>걸음</th><th>기울기 (x, y)</th><th>x 이동</th><th>y 이동</th><th>도착 위치</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="num">(−0.70, 4.00)</td><td class="num up">+0.300</td><td class="num dn">−0.300</td><td class="num">(−6.70, 1.70)</td></tr>
+      <tr><td class="num">2</td><td class="num">(−0.67, 3.40)</td><td class="num up">+0.300</td><td class="num dn">−0.298</td><td class="num">(−6.40, 1.40)</td></tr>
+      <tr><td class="num">3</td><td class="num">(−0.64, 2.80)</td><td class="num up">+0.299</td><td class="num dn">−0.293</td><td class="num">(−6.10, 1.11)</td></tr>
+      <tr><td class="num">4</td><td class="num">(−0.61, 2.22)</td><td class="num up">+0.298</td><td class="num dn">−0.286</td><td class="num">(−5.80, 0.82)</td></tr>
+      <tr><td class="num">5</td><td class="num">(−0.58, 1.65)</td><td class="num up">+0.296</td><td class="num dn">−0.275</td><td class="num">(−5.51, 0.55)</td></tr>
+    </tbody></table></div>
+  <p>y 기울기가 x보다 약 6배 큰데도 <strong>두 방향 모두 거의 0.3(= 학습률)씩</strong> 움직였어요. m을 √v로 나누면서 기울기의 크기가 걸러지고, 방향만 남기 때문이에요. 그래서 y는 바닥을 지나치지 않고 차분히 내려오고, x는 SGD처럼 느려지지 않아요. 여기에 m(모멘텀) 덕분에 같은 방향으로는 꾸준히 밀려가요.</p>
+  </div>
+  <figure>
+    <div class="fig-title">Adam에 의한 최적화 갱신 경로 (그림 6-7)</div>
+    <div class="pp"><svg id="figAdam" viewBox="0 0 760 300" role="img" aria-label="Adam 경로: 공이 구르듯 하지만 좌우 흔들림이 적게 원점에 다가감"></svg></div>
+    <figcaption>학습률 0.3으로 30번 갱신한 경로예요.</figcaption>
+  </figure>
+  <div class="col">
+  <p>Adam의 갱신 과정도 그릇 바닥을 구르듯 움직여요. 모멘텀과 비슷한 패턴인데, 모멘텀 때보다 <strong>공의 좌우 흔들림이 적어요.</strong> 학습의 갱신 강도를 적응적으로 조정해서 얻는 혜택이에요.</p>
+  <div class="note"><strong>Adam의 하이퍼파라미터는 3개</strong>예요. 하나는 지금까지의 학습률(논문에서는 α로 등장)이고, 나머지 두 개는 일차 모멘텀용 계수 <strong>β₁</strong>과 이차 모멘텀용 계수 <strong>β₂</strong>예요. 논문에 따르면 기본 설정값은 <strong>β₁ = 0.9, β₂ = 0.999</strong>이고, 이 값이면 많은 경우에 좋은 결과를 얻을 수 있어요.</div>
+  <h3>코드 (common/optimizer.py)</h3>
+  <p>책 본문에는 코드가 실려 있지 않고 소스 파일에 들어 있어요. 위의 네 줄 식을 <code>lr_t</code> 한 줄로 합쳐 쓴 형태예요.</p>
+<pre><code><span class="k">class</span> Adam:
+    <span class="k">def</span> __init__(self, lr=0.001, beta1=0.9, beta2=0.999):
+        self.lr = lr
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.iter = 0
+        self.m = <span class="k">None</span>
+        self.v = <span class="k">None</span>
+
+    <span class="k">def</span> update(self, params, grads):
+        <span class="k">if</span> self.m <span class="k">is</span> <span class="k">None</span>:
+            self.m, self.v = {}, {}
+            <span class="k">for</span> key, val <span class="k">in</span> params.items():
+                self.m[key] = np.zeros_like(val)
+                self.v[key] = np.zeros_like(val)
+
+        self.iter += 1
+<span class="hl">        lr_t = self.lr * np.sqrt(1.0 - self.beta2**self.iter) / (1.0 - self.beta1**self.iter)   <span class="c"># 편향 보정</span></span>
+
+        <span class="k">for</span> key <span class="k">in</span> params.keys():
+            self.m[key] += (1 - self.beta1) * (grads[key] - self.m[key])       <span class="c"># 기울기의 평균</span>
+            self.v[key] += (1 - self.beta2) * (grads[key]**2 - self.v[key])    <span class="c"># 기울기 제곱의 평균</span>
+            params[key] -= lr_t * self.m[key] / (np.sqrt(self.v[key]) + 1e-7)</code></pre>
+  <ul>
+    <li><code>m += (1 − β₁)(g − m)</code>는 전개하면 <code>m = β₁·m + (1 − β₁)·g</code>와 같아요. v도 마찬가지예요.</li>
+    <li>편향 보정은 m̂, v̂를 따로 만들지 않고, 학습률 <code>lr_t</code>에 보정 비율을 한 번에 곱해서 처리해요.</li>
+    <li>기본 학습률이 SGD·모멘텀·AdaGrad(0.01)보다 작은 <strong>0.001</strong>이에요.</li>
+  </ul>
+  </div>
+</section>
+
+<section id="which">
+  <div class="sec-no">6.1.7 · pp.200–201</div>
+  <h2>어느 갱신 방법을 이용할 것인가?</h2>
+  <div class="col"><p>지금까지 매개변수 갱신 방법 네 가지를 봤어요. 같은 문제(식 6.2, 출발점 (−7, 2), 30번 갱신)에서 네 기법의 결과를 나란히 비교해 봐요(그림 6-8). 걸음 수를 바꾸면 네 경로가 한 걸음씩 함께 진행되고, 각 칸의 학습률도 바꿔 볼 수 있어요.</p></div>
+  <figure>
+    <div class="fig-title">최적화 기법 비교: SGD, 모멘텀, AdaGrad, Adam (그림 6-8)</div>
+    <div class="ctrl">
+      <label for="stepAll">걸음 수</label><input type="range" id="stepAll" min="0" max="30" step="1" value="30"><span class="readout" id="stepAllV" style="min-width:3.5em">30</span>
+      <button type="button" id="playAll">▶ 처음부터 재생</button><button type="button" id="resetLr">학습률 원래대로</button>
+    </div>
+    <div class="quad" id="quad"></div>
+    <figcaption>점 하나가 갱신 한 번이에요. 학습률 기본값은 책의 비교 코드(ch06/optimizer_compare_naive.py)와 같아요: SGD 0.95, 모멘텀 0.1, AdaGrad 1.5, Adam 0.3.</figcaption>
+  </figure>
+  <div class="col">
+  <p>사용한 기법에 따라 갱신 경로가 달라요. 이 그림만 보면 AdaGrad가 가장 나은 것 같은데, 사실 그 결과는 <strong>풀어야 할 문제가 무엇이냐에 따라 달라지므로</strong> 주의해야 해요. 또 당연하지만 학습률 같은 <strong>하이퍼파라미터를 어떻게 설정하느냐</strong>에 따라서도 결과가 바뀌어요. 위에서 학습률을 바꿔 보면 순위가 금방 뒤집히는 걸 볼 수 있어요.</p>
+  <p>SGD, 모멘텀, AdaGrad, Adam 중 어느 것을 채택하면 될까요? 유감스럽게도 <strong>모든 문제에서 항상 뛰어난 기법은 (아직까진) 없어요.</strong> 각자의 장단이 있어 잘 푸는 문제와 서툰 문제가 있어요.</p>
+  <p>지금도 많은 연구에서 SGD를 사용해요. 모멘텀과 AdaGrad도 시도해 볼 만한 가치가 충분해요. 요즘에는 많은 분이 Adam에 만족해하며 쓰는 것 같아요. 책에서는 주로 SGD와 Adam을 사용하지만, 각자의 상황을 고려해 여러 가지로 시도해 보라고 권해요.</p>
+  </div>
+  <h3 class="col">네 가지 한눈에 비교</h3>
+  <div class="tw"><table>
+    <thead><tr><th>기법</th><th>핵심 아이디어</th><th>추가로 기억하는 값</th><th>하이퍼파라미터</th><th>이 문제에서 본 특징</th></tr></thead>
+    <tbody>
+      <tr><td><span class="sw" style="background:var(--s1)"></span>SGD</td><td>기울기 반대 방향으로 일정 비율만큼</td><td>없음</td><td>η</td><td>y로 크게 지그재그, x로는 느림</td></tr>
+      <tr><td><span class="sw" style="background:var(--s2)"></span>모멘텀</td><td>속도 v를 유지하며 기울기로 가속</td><td>v (속도)</td><td>η, α (0.9)</td><td>x로 가속, 지그재그 감소. 관성으로 지나치기도 함</td></tr>
+      <tr><td><span class="sw" style="background:var(--s3)"></span>AdaGrad</td><td>많이 움직인 매개변수는 학습률을 낮춤</td><td>h (기울기 제곱의 합)</td><td>η</td><td>y가 빠르게 잡히고 x로 곧게 이동</td></tr>
+      <tr><td><span class="sw" style="background:var(--s4)"></span>Adam</td><td>모멘텀 + 매개변수별 학습률 조절 + 편향 보정</td><td>m, v (두 평균)</td><td>η, β₁ (0.9), β₂ (0.999)</td><td>구르듯 이동하되 좌우 흔들림이 적음</td></tr>
+    </tbody></table></div>
+  <div class="tw"><table style="margin-top:14px">
+    <thead><tr><th>기법</th><th>쉽게 말하면</th></tr></thead>
+    <tbody>
+      <tr><td>SGD</td><td>발밑 경사만 보고 매번 같은 비율로 한 걸음</td></tr>
+      <tr><td>모멘텀</td><td>굴러가는 공처럼, 지금까지의 움직임을 이어받아 감</td></tr>
+      <tr><td>AdaGrad</td><td>가파른 길은 조심조심, 완만한 길은 성큼성큼</td></tr>
+      <tr><td>Adam</td><td>관성 있게 가면서, 길이 가파른 정도에 맞춰 보폭도 조절</td></tr>
+    </tbody></table></div>
+</section>
+
+<section id="mnist">
+  <div class="sec-no">6.1.8 · p.201</div>
+  <h2>MNIST 데이터셋으로 본 갱신 방법 비교</h2>
+  <div class="col">
+  <p>이번엔 손글씨 숫자 인식에서 네 기법의 학습 진도가 얼마나 다른지 비교해요. 책의 실험(ch06/optimizer_compare_mnist.py)은 각 층이 100개의 뉴런으로 구성된 <strong>5층 신경망</strong>에서 <strong>ReLU</strong>를 활성화 함수로 썼어요. 아래는 같은 구조(은닉층 100개 × 4, ReLU)와 같은 기본 학습률, 배치 128, 2,000번 반복으로 돌린 결과예요. 입력 데이터만 MNIST 대신 scikit-learn의 8×8 손글씨 숫자를 썼어요.</p>
+  </div>
+  <figure>
+    <div class="fig-title">학습 반복에 따른 손실 함수 값 (그림 6-9와 같은 실험)</div>
+    <div class="leg2" id="lgCmp"></div>
+    <div class="chart" id="cmpChart"></div>
+    <figcaption>손실은 10번 반복마다 직전 10번의 평균으로 그렸어요. 학습률은 SGD·모멘텀·AdaGrad 0.01, Adam 0.001(각 클래스의 기본값)이에요.</figcaption>
+  </figure>
+  <div class="tw col"><table style="min-width:420px">
+    <thead><tr><th>기법</th><th>100번째 반복 무렵 손실</th><th>2,000번 후 시험 정확도</th></tr></thead>
+    <tbody>
+      <tr><td><span class="sw" style="background:var(--s1)"></span>SGD</td><td class="num">1.56</td><td class="num">96.9%</td></tr>
+      <tr><td><span class="sw" style="background:var(--s2)"></span>모멘텀</td><td class="num">0.17</td><td class="num">97.8%</td></tr>
+      <tr><td><span class="sw" style="background:var(--s3)"></span>AdaGrad</td><td class="num">0.04</td><td class="num">97.8%</td></tr>
+      <tr><td><span class="sw" style="background:var(--s4)"></span>Adam</td><td class="num">0.08</td><td class="num">97.8%</td></tr>
+    </tbody></table></div>
+  <div class="col">
+  <p>책의 그림 6-9와 같은 결론이 나와요. <strong>SGD의 학습 진도가 가장 느리고</strong>, 나머지 세 기법의 진도는 비슷한데 잘 보면 <strong>AdaGrad가 조금 더 빨라요.</strong> 이 실험에서 주의할 점은 학습률 같은 하이퍼파라미터와 신경망의 구조(층 깊이 등)에 따라 결과가 달라진다는 거예요. 다만 일반적으로 <strong>SGD보다 다른 세 기법이 빠르게 학습하고, 때로는 최종 정확도도 높게</strong> 나타나요.</p>
+  </div>
+</section>
+
+<section id="sum" style="border-bottom:0">
+  <div class="sec-no">정리</div>
+  <h2>6.1에서 기억할 것</h2>
+  <div class="col">
+  <ul class="check">
+    <li>최적화는 손실 함수를 최소로 만드는 매개변수를 찾는 문제이고, 기울기가 유일한 단서예요(눈 가린 모험가).</li>
+    <li>갱신 방법은 <code>update(params, grads)</code>를 가진 optimizer 클래스로 분리해요. 한 줄만 바꾸면 기법이 바뀌어요.</li>
+    <li><strong>SGD</strong>는 단순하지만 방향마다 기울기가 다른(비등방성) 함수에서 지그재그로 비효율적이에요. 기울어진 방향이 최솟값 방향과 다르기 때문이에요.</li>
+    <li><strong>모멘텀</strong>은 속도 v로 같은 방향은 가속하고 번갈아 바뀌는 방향은 상쇄해요. α는 보통 0.9예요.</li>
+    <li><strong>AdaGrad</strong>는 기울기 제곱을 쌓은 h로 나눠서 매개변수마다 학습률을 낮춰요. 계속 쌓기만 하는 약점은 RMSProp이 지수이동평균으로 고쳤어요.</li>
+    <li><strong>Adam</strong>은 모멘텀과 AdaGrad(RMSProp)를 합치고 편향 보정을 더했어요. 기본값은 β₁ = 0.9, β₂ = 0.999예요.</li>
+    <li>모든 문제에서 최고인 기법은 없어요. 일반적으로는 SGD보다 나머지 세 기법이 빠르고, 요즘은 Adam을 기본으로 많이 써요.</li>
+  </ul>
+  </div>
+</section>
+</div>
+
+<script>
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const NS='http://www.w3.org/2000/svg';
+const el=(t,a={},p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;};
+const CMP={"SGD":{"loss":[2.5423,2.4159,2.2908,2.204,2.1297,2.0308,1.9444,1.8645,1.7464,1.6872,1.6009,1.5083,1.4192,1.3247,1.2476,1.171,1.071,1.0308,0.9458,0.8893,0.857,0.787,0.7177,0.6927,0.6914,0.6186,0.5802,0.5767,0.5392,0.5295,0.4971,0.4551,0.4771,0.4353,0.4151,0.3978,0.4031,0.3785,0.3817,0.3466,0.3506,0.3422,0.356,0.321,0.2768,0.3195,0.2884,0.2703,0.2859,0.2797,0.256,0.2648,0.2501,0.25,0.2561,0.2253,0.2407,0.214,0.2088,0.2131,0.1906,0.2074,0.202,0.1816,0.1938,0.2093,0.1854,0.1727,0.1964,0.1734,0.1675,0.1746,0.1789,0.1719,0.1524,0.1536,0.1547,0.161,0.1522,0.1414,0.1553,0.1423,0.143,0.1492,0.122,0.1338,0.1399,0.1366,0.1387,0.1253,0.1158,0.1321,0.1451,0.1408,0.1132,0.1115,0.1254,0.1104,0.1119,0.1189,0.1213,0.1134,0.1122,0.1178,0.1013,0.1004,0.1184,0.095,0.0875,0.0994,0.0934,0.1038,0.1021,0.0944,0.1055,0.1008,0.102,0.1113,0.1091,0.0812,0.0939,0.0889,0.0877,0.09,0.083,0.0856,0.0877,0.0773,0.0756,0.0837,0.0886,0.0841,0.0845,0.074,0.0688,0.0887,0.0832,0.0777,0.0794,0.0791,0.0838,0.073,0.0767,0.0762,0.0865,0.0752,0.069,0.0607,0.0754,0.0724,0.07,0.0571,0.0749,0.0684,0.0708,0.069,0.0738,0.0552,0.0633,0.0721,0.0663,0.0674,0.064,0.0548,0.0643,0.0615,0.0603,0.0613,0.0574,0.0621,0.0616,0.0542,0.0549,0.0594,0.0498,0.0568,0.0555,0.0577,0.0536,0.0538,0.0523,0.0604,0.0474,0.0554,0.049,0.0545,0.0526,0.0554,0.0524,0.044,0.049,0.0482,0.0491,0.0488,0.0537,0.0418,0.0483,0.0496,0.0489,0.0502]},"Momentum":{"loss":[2.5423,2.2916,1.8763,1.2943,0.8195,0.4899,0.3679,0.272,0.2009,0.1897,0.1815,0.1429,0.1197,0.124,0.1017,0.1123,0.0993,0.0978,0.0822,0.0843,0.0721,0.0664,0.0578,0.046,0.054,0.0369,0.0339,0.0439,0.0299,0.0295,0.0296,0.031,0.0317,0.0251,0.0257,0.0254,0.0274,0.0232,0.0338,0.0264,0.0236,0.0187,0.0229,0.0202,0.014,0.0168,0.0149,0.0116,0.014,0.0143,0.0138,0.0138,0.0116,0.0099,0.013,0.01,0.011,0.0116,0.01,0.0124,0.0079,0.0081,0.0076,0.0067,0.0075,0.0078,0.0081,0.0066,0.0086,0.0057,0.0057,0.0058,0.0059,0.0052,0.0049,0.0051,0.0051,0.0056,0.0049,0.0047,0.005,0.0054,0.0045,0.0046,0.0037,0.0042,0.0041,0.0046,0.0045,0.0038,0.0035,0.0036,0.0044,0.0044,0.0033,0.0036,0.0038,0.0034,0.0034,0.0031,0.0035,0.0037,0.0033,0.0035,0.0032,0.0031,0.0031,0.0028,0.0026,0.003,0.0026,0.0027,0.0027,0.0027,0.0029,0.0032,0.003,0.0028,0.0029,0.0019,0.0024,0.0023,0.0024,0.0024,0.0022,0.0023,0.0023,0.002,0.002,0.0021,0.0022,0.002,0.0023,0.002,0.0017,0.0024,0.0023,0.002,0.0021,0.0021,0.0021,0.0018,0.0021,0.002,0.0022,0.0019,0.0019,0.0015,0.0018,0.0019,0.0018,0.0015,0.0017,0.0017,0.0019,0.0019,0.0019,0.0013,0.0016,0.0016,0.0015,0.0016,0.0016,0.0013,0.0015,0.0016,0.0016,0.0014,0.0014,0.0015,0.0013,0.0014,0.0013,0.0015,0.0013,0.0013,0.0013,0.0013,0.0014,0.0013,0.0012,0.0016,0.0011,0.0014,0.0012,0.0013,0.0013,0.0013,0.0013,0.0012,0.0012,0.0011,0.0012,0.0012,0.0012,0.0011,0.0011,0.0012,0.0011,0.0012]},"AdaGrad":{"loss":[2.5423,1.3488,0.5135,0.2092,0.1772,0.111,0.0833,0.057,0.0496,0.0491,0.054,0.0298,0.0217,0.0306,0.0181,0.0218,0.0216,0.0141,0.0163,0.0105,0.0121,0.0124,0.0079,0.0082,0.01,0.0068,0.006,0.0074,0.0053,0.0047,0.0051,0.0044,0.0054,0.0042,0.0041,0.0037,0.0038,0.0037,0.0037,0.0034,0.0035,0.0032,0.0038,0.0035,0.0027,0.003,0.003,0.0024,0.0028,0.0026,0.0023,0.0025,0.0023,0.0021,0.0024,0.0018,0.0022,0.0019,0.0018,0.002,0.0015,0.0017,0.0017,0.0016,0.0017,0.0016,0.0016,0.0016,0.0016,0.0014,0.0012,0.0014,0.0014,0.0012,0.0013,0.0012,0.0012,0.0012,0.0011,0.0011,0.0012,0.001,0.001,0.0011,0.001,0.001,0.001,0.0011,0.0012,0.0009,0.0009,0.0009,0.0011,0.0011,0.0009,0.0008,0.001,0.0009,0.0009,0.0008,0.0009,0.0008,0.0008,0.0009,0.0007,0.0008,0.0009,0.0007,0.0007,0.0007,0.0007,0.0007,0.0007,0.0007,0.0007,0.0007,0.0008,0.0008,0.0007,0.0005,0.0006,0.0006,0.0007,0.0006,0.0006,0.0006,0.0006,0.0006,0.0005,0.0005,0.0007,0.0005,0.0006,0.0005,0.0005,0.0006,0.0006,0.0006,0.0006,0.0005,0.0005,0.0005,0.0005,0.0005,0.0006,0.0005,0.0005,0.0004,0.0005,0.0005,0.0005,0.0004,0.0005,0.0004,0.0005,0.0005,0.0005,0.0004,0.0004,0.0004,0.0004,0.0004,0.0004,0.0004,0.0004,0.0004,0.0004,0.0004,0.0004,0.0004,0.0004,0.0003,0.0004,0.0004,0.0004,0.0004,0.0004,0.0004,0.0004,0.0004,0.0003,0.0004,0.0003,0.0004,0.0003,0.0004,0.0003,0.0004,0.0004,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003]},"Adam":{"loss":[2.5423,2.1028,1.5272,0.8893,0.5169,0.2859,0.2103,0.1517,0.1085,0.0998,0.0939,0.0578,0.0445,0.0472,0.0361,0.0365,0.0362,0.03,0.0274,0.0243,0.0272,0.0228,0.0135,0.0129,0.0132,0.0084,0.0077,0.0083,0.0058,0.0047,0.0052,0.0043,0.0049,0.0042,0.0038,0.0036,0.0035,0.0034,0.0032,0.0028,0.0028,0.0025,0.003,0.0026,0.002,0.0023,0.0022,0.0019,0.0022,0.002,0.0016,0.0017,0.0015,0.0014,0.0015,0.0011,0.0013,0.0012,0.0012,0.0012,0.0009,0.001,0.001,0.0009,0.0009,0.0009,0.0009,0.0009,0.0009,0.0007,0.0006,0.0008,0.0007,0.0006,0.0006,0.0006,0.0006,0.0006,0.0006,0.0006,0.0006,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0004,0.0004,0.0004,0.0005,0.0005,0.0004,0.0004,0.0004,0.0004,0.0004,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0002,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0003,0.0002,0.0002,0.0002,0.0002,0.0002,0.0002,0.0002,0.0002,0.0002,0.0002,0.0002,0.0002,0.0002,0.0002,0.0002,0.0001,0.0002,0.0002,0.0002,0.0002,0.0002,0.0002,0.0001,0.0001,0.0002,0.0002,0.0002,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001]}};
+const METHODS={
+  SGD:{name:'SGD',color:'--s1',lr:0.95},
+  Momentum:{name:'모멘텀',color:'--s2',lr:0.1},
+  AdaGrad:{name:'AdaGrad',color:'--s3',lr:1.5},
+  Adam:{name:'Adam',color:'--s4',lr:0.3}
+};
+const grad=(x,y)=>[x/10,2*y];
+function path(method,lr,n=30){
+  let x=-7,y=2; const P=[[x,y]]; let v=[0,0],h=[0,0],m=[0,0],s=[0,0],it=0;
+  for(let i=0;i<n;i++){
+    const g=grad(x,y);
+    if(method==='SGD'){x-=lr*g[0];y-=lr*g[1];}
+    else if(method==='Momentum'){v=[0.9*v[0]-lr*g[0],0.9*v[1]-lr*g[1]];x+=v[0];y+=v[1];}
+    else if(method==='AdaGrad'){h=[h[0]+g[0]*g[0],h[1]+g[1]*g[1]];x-=lr*g[0]/(Math.sqrt(h[0])+1e-7);y-=lr*g[1]/(Math.sqrt(h[1])+1e-7);}
+    else {it++;const lt=lr*Math.sqrt(1-Math.pow(0.999,it))/(1-Math.pow(0.9,it));
+      m=[m[0]+0.1*(g[0]-m[0]),m[1]+0.1*(g[1]-m[1])]; s=[s[0]+0.001*(g[0]*g[0]-s[0]),s[1]+0.001*(g[1]*g[1]-s[1])];
+      x-=lt*m[0]/(Math.sqrt(s[0])+1e-7); y-=lt*m[1]/(Math.sqrt(s[1])+1e-7);}
+    if(!isFinite(x)||!isFinite(y)||Math.abs(x)>1e6||Math.abs(y)>1e6){P.push([x,y]);break;}
+    P.push([x,y]);
+  }
+  return P;
+}
+function frame(svg,W,H,o={}){
+  svg.innerHTML='';
+  const m={l:o.l??34,r:10,t:10,b:o.b??24}, xr=[-10,10], yr=o.yr||[-4.5,4.5];
+  const X=x=>m.l+(x-xr[0])/(xr[1]-xr[0])*(W-m.l-m.r), Y=y=>m.t+(1-(y-yr[0])/(yr[1]-yr[0]))*(H-m.t-m.b);
+  const clip='c'+Math.random().toString(36).slice(2,8);
+  el('defs',{},svg).innerHTML=`<clipPath id="${clip}"><rect x="${m.l}" y="${m.t}" width="${W-m.l-m.r}" height="${H-m.t-m.b}"/></clipPath><marker id="${clip}a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="${css('--ink-3')}"/></marker>`;
+  el('rect',{x:m.l,y:m.t,width:W-m.l-m.r,height:H-m.t-m.b,fill:css('--sheet'),stroke:css('--rule')},svg);
+  const g=el('g',{'clip-path':`url(#${clip})`},svg);
+  [0.25,1,2.25,4,6.25,9,12.25,16].forEach(c=>{const a=Math.sqrt(20*c),b=Math.sqrt(c);
+    el('ellipse',{cx:X(0),cy:Y(0),rx:X(a)-X(0),ry:Y(0)-Y(b),fill:'none',stroke:css('--rule'),'stroke-width':1.2},g);});
+  el('line',{x1:X(-10),x2:X(10),y1:Y(0),y2:Y(0),stroke:css('--grid'),'stroke-dasharray':'3 3'},g);
+  if(!o.noTicks){
+    [-10,-5,0,5,10].forEach(t=>{const tx=el('text',{x:X(t),y:H-m.b+15,'text-anchor':'middle'},svg);tx.textContent=t;});
+    const yt=o.yt||[-4,-2,0,2,4]; yt.forEach(t=>{const tx=el('text',{x:m.l-6,y:Y(t)+3.5,'text-anchor':'end'},svg);tx.textContent=t;});
+  }
+  return {X,Y,g,m,clip};
+}
+function drawPath(svg,method,lr,k,o={}){
+  const vb=svg.viewBox.baseVal, W=vb.width, H=vb.height;
+  const F=frame(svg,W,H,o), col=css(METHODS[method].color);
+  const P=path(method,lr).slice(0,k+1);
+  el('circle',{cx:F.X(0),cy:F.Y(0),r:4,fill:css('--ink'),stroke:css('--sheet'),'stroke-width':1.5},F.g);
+  el('polyline',{points:P.map(p=>F.X(p[0]).toFixed(1)+','+F.Y(p[1]).toFixed(1)).join(' '),fill:'none',stroke:col,'stroke-width':1.6,'stroke-linejoin':'round',opacity:.85},F.g);
+  P.forEach((p,i)=>el('circle',{cx:F.X(p[0]),cy:F.Y(p[1]),r:i===0?5:(o.small?2.6:3.2),fill:i===0?css('--sheet'):col,stroke:col,'stroke-width':i===0?2:0},F.g));
+  const st=el('text',{x:F.X(-7)-6,y:F.Y(2)-9,'text-anchor':'middle'},svg); st.textContent='출발 (−7, 2)';
+  const mn=el('text',{x:F.X(0)+6,y:F.Y(0)+14},svg); mn.textContent='최솟값';
+  const last=P[P.length-1]; return last;
+}
+function drawField(){
+  const svg=document.getElementById('figField'), vb=svg.viewBox.baseVal;
+  const F=frame(svg,vb.width,vb.height,{yr:[-5,5],yt:[-4,-2,0,2,4]});
+  for(let x=-9;x<=9.01;x+=1.5) for(let y=-4;y<=4.01;y+=1){
+    const g=grad(x,y); let dx=-g[0],dy=-g[1]; const L=Math.hypot(dx,dy); if(L<1e-9) continue;
+    const s=Math.min(0.9,0.12*L)/L*1.0; const x2=x+dx*s, y2=y+dy*s;
+    el('line',{x1:F.X(x),y1:F.Y(y),x2:F.X(x2),y2:F.Y(y2),stroke:css('--s1'),'stroke-width':1.3,'marker-end':`url(#${F.clip}a)`},F.g);
+  }
+  el('circle',{cx:F.X(0),cy:F.Y(0),r:5,fill:css('--warn')},F.g);
+  const t=el('text',{x:F.X(0)+8,y:F.Y(0)-8,style:`fill:${css('--warn')};font-weight:600`},svg); t.textContent='최솟값 (0, 0)';
+  el('circle',{cx:F.X(-7),cy:F.Y(2),r:5,fill:'none',stroke:css('--ink'),'stroke-width':2},F.g);
+  const t2=el('text',{x:F.X(-7),y:F.Y(2)-10,'text-anchor':'middle',style:`fill:${css('--ink-2')}`},svg); t2.textContent='(−7, 2): 기울기 (−0.7, 4)';
+}
+function drawSingles(){
+  drawPath(document.getElementById('figSGD'),'SGD',0.95,30);
+  drawPath(document.getElementById('figMom'),'Momentum',0.1,30);
+  drawPath(document.getElementById('figAda'),'AdaGrad',1.5,30);
+  drawPath(document.getElementById('figAdam'),'Adam',0.3,30);
+}
+/* quad playground */
+const Q={k:30,lr:{SGD:0.95,Momentum:0.1,AdaGrad:1.5,Adam:0.3},timer:null};
+function buildQuad(){
+  const host=document.getElementById('quad'); host.innerHTML='';
+  Object.keys(METHODS).forEach(key=>{
+    const M=METHODS[key]; const d=document.createElement('div');
+    d.innerHTML=`<div class="qt"><span style="font-family:var(--f-body);font-size:14px;font-weight:600;color:var(--ink)"><span class="sw" style="background:var(${M.color})"></span>${M.name}</span><span id="qd-${key}"></span></div>
+      <div class="pp"><svg id="qs-${key}" viewBox="0 0 420 210" role="img" aria-label="${M.name} 경로"></svg></div>
+      <div class="lr"><label for="ql-${key}">학습률</label><input type="range" id="ql-${key}" min="-2.5" max="0.6" step="0.01"><span class="readout" id="qv-${key}" style="min-width:3.5em"></span></div>`;
+    host.appendChild(d);
+    const r=d.querySelector('input'); r.value=Math.log10(Q.lr[key]);
+    r.addEventListener('input',()=>{Q.lr[key]=+Math.pow(10,+r.value).toPrecision(2); drawQuadOne(key);});
+  });
+  drawQuad();
+}
+function drawQuadOne(key){
+  const last=drawPath(document.getElementById('qs-'+key),key,Q.lr[key],Q.k,{small:true,l:30,yt:[-4,0,4]});
+  document.getElementById('qv-'+key).textContent=Q.lr[key];
+  const dist=Math.hypot(last[0],last[1]);
+  document.getElementById('qd-'+key).textContent=(isFinite(dist)&&dist<1e5)?`${Q.k}걸음 후 최솟값까지 거리 ${dist.toFixed(2)}`:'발산';
+}
+function drawQuad(){ Object.keys(METHODS).forEach(drawQuadOne); document.getElementById('stepAllV').textContent=Q.k; }
+document.getElementById('stepAll').addEventListener('input',e=>{clearInterval(Q.timer);Q.k=+e.target.value;drawQuad();});
+document.getElementById('playAll').addEventListener('click',()=>{clearInterval(Q.timer);Q.k=0;document.getElementById('stepAll').value=0;drawQuad();
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  Q.timer=setInterval(()=>{if(Q.k>=30){clearInterval(Q.timer);return;}Q.k++;document.getElementById('stepAll').value=Q.k;drawQuad();},reduce?40:220);});
+document.getElementById('resetLr').addEventListener('click',()=>{Q.lr={SGD:0.95,Momentum:0.1,AdaGrad:1.5,Adam:0.3};buildQuad();});
+
+/* comparison chart */
+function lineChart(host,o){
+  host.innerHTML=''; const W=Math.max(320,Math.min(880,host.clientWidth||880)), H=W<600?260:280, m={l:40,r:14,t:10,b:30};
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':o.label},host);
+  const n=o.series[0].values.length, X=i=>m.l+i/(n-1)*(W-m.l-m.r), Y=v=>m.t+(1-Math.min(v,o.ymax)/o.ymax)*(H-m.t-m.b);
+  o.yt.forEach(t=>{el('line',{x1:m.l,x2:W-m.r,y1:Y(t),y2:Y(t),class:'gridl'},svg);const a=el('text',{x:m.l-6,y:Y(t)+4,'text-anchor':'end'},svg);a.textContent=t;});
+  [0,500,1000,1500,2000].forEach(t=>{const i=t/2000*(n-1);const a=el('text',{x:X(i),y:H-m.b+16,'text-anchor':'middle'},svg);a.textContent=t.toLocaleString();});
+  const xl=el('text',{x:W-m.r,y:H-2,'text-anchor':'end'},svg);xl.textContent='반복 횟수';
+  o.series.forEach(s=>el('path',{d:s.values.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join(''),fill:'none',stroke:css(s.color),'stroke-width':2,'stroke-linejoin':'round'},svg));
+  const cross=el('line',{y1:m.t,y2:H-m.b,stroke:css('--ink-3'),opacity:0},svg);
+  const dots=o.series.map(s=>el('circle',{r:4,fill:css(s.color),stroke:css('--sheet'),'stroke-width':2,opacity:0},svg));
+  const tip=document.createElement('div'); tip.className='tip'; host.appendChild(tip);
+  const hit=el('rect',{x:m.l,y:m.t,width:W-m.l-m.r,height:H-m.t-m.b,fill:'transparent'},svg);
+  const mv=ev=>{const r=svg.getBoundingClientRect();let i=Math.round(((ev.clientX-r.left)/r.width*W-m.l)/(W-m.l-m.r)*(n-1));i=Math.max(0,Math.min(n-1,i));
+    cross.setAttribute('x1',X(i));cross.setAttribute('x2',X(i));cross.setAttribute('opacity',.6);
+    o.series.forEach((s,k)=>{dots[k].setAttribute('cx',X(i));dots[k].setAttribute('cy',Y(s.values[i]));dots[k].setAttribute('opacity',1);});
+    tip.innerHTML=`<div>반복 ${(i*10).toLocaleString()}</div>`+o.series.map(s=>`<div>${s.name}: ${s.values[i].toFixed(3)}</div>`).join('');
+    tip.style.left=(X(i)/W*r.width)+'px';tip.style.top=(m.t/H*r.height+40)+'px';tip.classList.add('on');};
+  hit.addEventListener('pointermove',mv);hit.addEventListener('pointerdown',mv);
+  hit.addEventListener('pointerleave',()=>{tip.classList.remove('on');cross.setAttribute('opacity',0);dots.forEach(d=>d.setAttribute('opacity',0));});
+}
+function drawCmp(){
+  const series=Object.keys(METHODS).map(k=>({name:METHODS[k].name,color:METHODS[k].color,values:CMP[k].loss}));
+  document.getElementById('lgCmp').innerHTML=series.map(s=>`<span><i style="background:var(${s.color})"></i>${s.name}</span>`).join('');
+  lineChart(document.getElementById('cmpChart'),{series,ymax:2.6,yt:[0,0.5,1,1.5,2,2.5],label:'최적화 기법별 손실 곡선'});
+}
+function renderAll(){drawField();drawSingles();drawQuad();drawCmp();}
+buildQuad(); drawField(); drawSingles(); drawCmp();
+let rt;const rr=()=>{clearTimeout(rt);rt=setTimeout(renderAll,60);};
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',rr);new MutationObserver(rr).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});}catch(e){}
+let lw=innerWidth;addEventListener('resize',()=>{if(Math.abs(innerWidth-lw)>40){lw=innerWidth;drawCmp();}});
+</script>
+
+</body></html>
