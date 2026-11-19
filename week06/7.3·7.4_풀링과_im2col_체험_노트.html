@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>7.3·7.4 풀링과 im2col 체험 노트</title>
+<style>
+/* 레이아웃: 위에서 아래로 읽는 한 칸 단 + 절마다 "설명 → 직접 눌러 보기 → 해볼 것" 카드 */
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --ink:#15191f; --muted:#5b6472; --line:#dde1e7;
+  --accent:#2457c5; --accent-bg:#e8effc; --hl:#fde68a; --hl-ink:#5b4300;
+  --c1:#fde68a; --c2:#bfdbfe; --c3:#bbf7d0; --c4:#fecaca;
+  --ok:#157347; --ok-bg:#e3f4ea; --warn:#b42318; --warn-bg:#fdeceb; --code-bg:#eef0f3;
+  --sans:"Pretendard","Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,"D2Coding",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101319; --surface:#181c24; --ink:#e8ebf0; --muted:#98a2b3; --line:#2b3240;
+    --accent:#8fb0ff; --accent-bg:#1c2640; --hl:#5b4a12; --hl-ink:#ffe9a8;
+    --c1:#5b4a12; --c2:#1f3a5c; --c3:#1c4a35; --c4:#5a2626;
+    --ok:#6fd3a0; --ok-bg:#14301f; --warn:#ff9a90; --warn-bg:#3a1b19; --code-bg:#1f2430;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101319; --surface:#181c24; --ink:#e8ebf0; --muted:#98a2b3; --line:#2b3240;
+  --accent:#8fb0ff; --accent-bg:#1c2640; --hl:#5b4a12; --hl-ink:#ffe9a8;
+  --c1:#5b4a12; --c2:#1f3a5c; --c3:#1c4a35; --c4:#5a2626;
+  --ok:#6fd3a0; --ok-bg:#14301f; --warn:#ff9a90; --warn-bg:#3a1b19; --code-bg:#1f2430;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.65}
+.wrap{max-width:900px;margin:0 auto;padding:24px 16px 80px}
+h1{font-size:28px;margin:8px 0 4px;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:21px;margin:0 0 4px;text-wrap:balance}
+h3{font-size:16px;margin:18px 0 6px}
+p{margin:8px 0}
+.meta{color:var(--muted);font-size:14px}
+code{font-family:var(--mono);font-size:.9em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+pre{font-family:var(--mono);font-size:13px;line-height:1.55;background:var(--code-bg);padding:12px 14px;border-radius:8px;overflow-x:auto;margin:8px 0}
+a{color:var(--accent)}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 20px}
+nav.toc a{font-size:14px;text-decoration:none;border:1px solid var(--line);background:var(--surface);padding:5px 11px;border-radius:999px;color:var(--ink)}
+nav.toc a:hover{border-color:var(--accent);color:var(--accent)}
+.sum{background:var(--accent-bg);border-left:4px solid var(--accent);padding:12px 16px;border-radius:8px}
+section.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 20px 18px;margin:22px 0}
+.tag{display:inline-block;font-size:12px;color:var(--accent);background:var(--accent-bg);padding:1px 8px;border-radius:999px;margin-bottom:6px;font-variant-numeric:tabular-nums}
+.lab{border:1px dashed var(--line);border-radius:10px;padding:14px;margin:12px 0;background:var(--bg)}
+.lab>.t{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px}
+.row{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-start}
+.col{display:flex;flex-direction:column;align-items:center;gap:4px}
+.cap{font-size:12px;color:var(--muted);text-align:center;line-height:1.35;max-width:210px}
+.op{font-size:22px;color:var(--muted);align-self:center;padding:0 2px}
+table.g{border-collapse:separate;border-spacing:2px}
+table.g td{min-width:30px;height:30px;text-align:center;font-size:14px;font-family:var(--mono);background:var(--code-bg);border-radius:5px;padding:0 3px;font-variant-numeric:tabular-nums}
+table.g.big td{min-width:34px;height:34px;font-size:15px}
+table.g.sm td{min-width:22px;height:24px;font-size:12px}
+table.g td.c1{background:var(--c1)} table.g td.c2{background:var(--c2)}
+table.g td.c3{background:var(--c3)} table.g td.c4{background:var(--c4)}
+table.g td.cur{outline:2px solid var(--accent);background:var(--hl);color:var(--hl-ink);font-weight:700}
+table.g td.done{background:var(--accent-bg)}
+table.g td.off{color:var(--muted);text-decoration:line-through}
+table.g td.diff{outline:2px solid var(--warn)}
+table.g td.same{background:var(--ok-bg)}
+table.g td.clk{cursor:pointer}
+table.g td.clk:hover{outline:2px solid var(--accent)}
+table.g td.fw{background:var(--accent-bg);padding:0}
+table.g td.fw input{width:40px;height:32px;padding:0;border:0;border-radius:5px;background:transparent;text-align:center;font:inherit;font-size:15px;color:var(--ink);-moz-appearance:textfield;appearance:textfield}
+table.g td.fw input::-webkit-inner-spin-button,table.g td.fw input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+button,select,input[type=number]{font:inherit;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:5px 11px}
+input[type=number]{width:74px}
+button{cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.on{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);font-weight:600}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.say{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:14.5px;margin-top:10px;font-variant-numeric:tabular-nums;word-break:break-word}
+.say b{font-weight:700}
+.warn{color:var(--warn)} .ok{color:var(--ok)}
+.try{background:var(--ok-bg);border-radius:8px;padding:10px 14px;font-size:14.5px;margin-top:12px}
+.try b.t{display:block;margin-bottom:2px}
+.try ul{margin:4px 0 0;padding-left:20px}
+table.t{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+table.t th,table.t td{border:1px solid var(--line);padding:5px 9px;text-align:left;vertical-align:top}
+table.t th{background:var(--code-bg)}
+.scroll{overflow-x:auto}
+.bar{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:14px}
+.bar .lbl{width:150px;flex:none}
+.bar .track{flex:1;background:var(--code-bg);border-radius:6px;height:20px;overflow:hidden;min-width:80px}
+.bar .fill{height:100%;background:var(--accent);border-radius:6px}
+.bar .fill.o{background:var(--ok)}
+.bar .val{width:58px;text-align:right;font-family:var(--mono)}
+.fld{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px 14px}
+.fld label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:2px}
+details{border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:10px 0;background:var(--surface)}
+details summary{cursor:pointer;font-weight:600;font-size:14.5px}
+footer{color:var(--muted);font-size:13px;margin-top:30px}
+table.g td.u0{background:var(--warn-bg);color:var(--warn);font-weight:700}
+table.g td.u2{background:var(--accent-bg);color:var(--accent);font-weight:700}
+table.g.tiny{border-spacing:1px}
+table.g.tiny td{min-width:8px;width:8px;height:8px;font-size:0;border-radius:2px;padding:0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin:6px 0}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:4px;background:var(--code-bg)}
+.legend i.l0{background:var(--warn-bg);outline:1px solid var(--warn)}
+.legend i.l2{background:var(--accent-bg);outline:1px solid var(--accent)}
+details.qa>summary{font-size:16px}
+details.qa .a{margin-top:8px}
+@media (max-width:520px){ .bar .lbl{width:100px} h1{font-size:23px} }
+@media (prefers-reduced-motion:no-preference){ .bar .fill{transition:width .25s} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="meta">「밑바닥부터 시작하는 딥러닝」 7장 · 책 p.240~249 · 숫자 칸과 버튼을 직접 눌러 보세요</div>
+<h1>7.3 · 7.4 풀링과 im2col 체험 노트</h1>
+
+<div class="sum"><b>한 문장 요약.</b> 풀링은 2×2 같은 영역에서 <b>최댓값 하나</b>만 남겨 크기를 줄이는 계층(학습할 값 없음)이고, 7.4는 합성곱과 풀링을 <b>입력을 행렬로 펼쳐(im2col) 행렬 곱 한 번</b>으로 계산하는 구현입니다. 아래 데모들에서 직접 확인하고, 마지막에 공부하며 나온 의문들의 답을 모았습니다.</div>
+
+<nav class="toc" aria-label="목차">
+  <a href="#pool">① 풀링 스테퍼</a>
+  <a href="#stride">①-2 윈도우·stride 실험실</a>
+  <a href="#robust">② 강건성 실험</a>
+  <a href="#perc">③ 합성곱 = 퍼셉트론, 편향</a>
+  <a href="#im2col">④ im2col 행렬 곱</a>
+  <a href="#calc">⑤ shape · 메모리 계산기</a>
+  <a href="#chan">⑥ 풀링의 채널 분리</a>
+  <a href="#code">⑦ 구현 코드 읽기</a>
+  <a href="#qa">⑧ 의문 정리</a>
+</nav>
+
+<!-- ============ ① 풀링 ============ -->
+<section class="card" id="pool">
+  <span class="tag">7.3 · p.240~242</span>
+  <h2>① 풀링: 윈도우마다 최댓값 하나</h2>
+  <p>윈도우를 움직이며 값 중 <b>가장 큰 값만</b> 출력합니다. 책은 윈도우 크기와 스트라이드를 같은 값으로 두는 것이 보통이라고 설명합니다(그림은 2×2, stride 2). 학습할 가중치는 없고, 채널 수는 그대로입니다.</p>
+  <div class="lab">
+    <div class="t">직접 해 보기 · 입력 칸을 누르면 값이 1씩 바뀝니다(0~9)</div>
+    <div class="btns">
+      <label>윈도우 <select id="ps"><option>2</option><option>3</option><option>4</option></select></label>
+      <label>stride <select id="pst"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label>
+      <button id="pprev">◀ 이전</button><button id="pnext">다음 ▶</button><button id="pall">모두 보기</button><button id="preset">입력 되돌리기</button>
+    </div>
+    <div class="row">
+      <div class="col"><div id="pin"></div><div class="cap">입력 (4,4)<br>노랑 = 지금 윈도우, 연한 파랑 = 이미 본 윈도우</div></div>
+      <div class="op">→ max →</div>
+      <div class="col"><div id="pout"></div><div class="cap" id="poutcap">출력</div></div>
+    </div>
+    <div class="say" id="psay"></div>
+  </div>
+  <div class="try"><b class="t">해볼 것</b>
+    <ul>
+      <li>윈도우 2, stride 1로 바꾸면 윈도우가 겹칩니다. 출력 크기가 어떻게 변하나요?</li>
+      <li>윈도우 3, stride 3이면 4×4에 3×3이 한 번만 들어갑니다. 아래 식의 "나누어떨어짐" 표시를 보세요.</li>
+      <li>최댓값이 있는 칸을 눌러 값을 줄이면 출력이 바뀌고, 최댓값이 아닌 칸을 바꾸면 출력이 그대로입니다. 이것이 "버려지는 칸은 영향이 없다"는 뜻입니다.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ ①-2 윈도우·stride ============ -->
+<section class="card" id="stride">
+  <span class="tag">7.3 · 질문 이어서</span>
+  <h2>①-2 윈도우와 stride를 어떻게 맞추나</h2>
+  <p>윈도우를 입력 위에서 움직일 때 <b>각 칸이 몇 번 쓰이는지</b>를 색과 숫자로 보여 줍니다. 세로와 가로의 윈도우·stride를 따로 정할 수 있습니다.</p>
+  <div class="legend"><span><i class="l0"></i>0번 = 건너뛴 칸</span><span><i></i>1번 = 한 번만 사용</span><span><i class="l2"></i>2번 이상 = 겹침</span></div>
+  <div class="lab">
+    <div class="t">직접 해 보기</div>
+    <div class="btns">예시: <button id="sp0">4×4, 윈도우 3, stride 2</button><button id="sp1">6×6, 윈도우 3×2, stride 3×2</button><button id="sp2">6×6, 윈도우 3×2, stride 3 하나만</button><button id="sp3">5×5, 윈도우 3, stride 2</button><button id="sp4">AlexNet POOL1 (55, 3, 2)</button></div>
+    <div class="fld" id="sfld">
+      <label for="s_H">입력 높이 H<input type="number" id="s_H" min="1" max="60" value="4"></label>
+      <label for="s_W">입력 너비 W<input type="number" id="s_W" min="1" max="60" value="4"></label>
+      <label for="s_PH">윈도우 높이<input type="number" id="s_PH" min="1" max="60" value="3"></label>
+      <label for="s_PW">윈도우 너비<input type="number" id="s_PW" min="1" max="60" value="3"></label>
+      <label for="s_SH">stride 세로<input type="number" id="s_SH" min="1" max="60" value="2"></label>
+      <label for="s_SW">stride 가로<input type="number" id="s_SW" min="1" max="60" value="2"></label>
+    </div>
+    <div class="btns"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="s_same"> stride를 윈도우 크기와 같게 (PyTorch <code>MaxPool2d</code>에서 stride를 생략했을 때의 기본값)</label></div>
+    <div class="row"><div class="col"><div id="sgrid"></div><div class="cap" id="scap">입력</div></div></div>
+    <div class="say" id="ssay"></div>
+  </div>
+  <div class="try"><b class="t">해볼 것</b>
+    <ul>
+      <li>첫 예시(4×4, 윈도우 3, stride 2): 출력은 (1,1)이고 마지막 행·열이 빨강(건너뜀)입니다.</li>
+      <li>둘째와 셋째 예시를 비교하세요. 윈도우가 3×2일 때 stride를 (3,2)로 주면 딱 맞고, 3 하나로 통일하면 가로가 어긋납니다.</li>
+      <li>체크박스를 켜고 윈도우를 바꿔 보세요. stride가 따라 움직여 겹침과 건너뜀이 사라집니다.</li>
+      <li>마지막 예시(AlexNet의 첫 풀링)는 (55−3)/2+1 = 27로 딱 맞고, 윈도우가 겹칩니다.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ ② 강건성 ============ -->
+<section class="card" id="robust">
+  <span class="tag">7.3 · 그림 7-16</span>
+  <h2>② 풀링은 작은 어긋남에 "대체로" 강하다</h2>
+  <p>0~(범위−1)의 난수 이미지 8×9를 만들고, 같은 이미지를 <b>1칸 어긋나게</b> 본 두 장(A, B)에 2×2 풀링을 적용합니다. 입력은 거의 다 달라져도 풀링 출력은 상당 부분 같습니다. 책이 "데이터에 따라서는 다를 수도 있다"고 한 이유를 값의 범위를 바꿔 보며 확인합니다.</p>
+  <div class="lab">
+    <div class="t">직접 해 보기</div>
+    <div class="btns">
+      <label>값의 범위 <select id="vmax"><option value="2">0~1 (이진)</option><option value="10" selected>0~9</option><option value="100">0~99</option></select></label>
+      <button id="rnew">새 예시 만들기</button>
+    </div>
+    <div class="row">
+      <div class="col"><div id="rA"></div><div class="cap">A (8×8)</div></div>
+      <div class="col"><div id="rB"></div><div class="cap">B = A를 1칸 어긋나게 본 것<br>(A와 같은 칸은 초록)</div></div>
+      <div class="col"><div id="rpA"></div><div class="cap">A의 풀링 (4×4)</div></div>
+      <div class="col"><div id="rpB"></div><div class="cap">B의 풀링 (4×4)<br>A와 다른 칸은 빨간 테두리</div></div>
+    </div>
+    <div class="say" id="rsay"></div>
+    <h3>2,000번 반복한 평균</h3>
+    <div id="rbars"></div>
+  </div>
+  <div class="try"><b class="t">해볼 것</b>
+    <ul><li>이진(0~1) 데이터에서는 풀링 출력이 대부분 같고, 0~99에서는 훨씬 덜 같습니다. 강건성은 데이터에 달려 있습니다.</li><li>어느 경우에도 100%가 아닙니다. "강건하다"는 "항상 같다"가 아닙니다.</li></ul>
+  </div>
+</section>
+
+<!-- ============ ③ 퍼셉트론 ============ -->
+<section class="card" id="perc">
+  <span class="tag">7.2 · 그림 7-12 이어서</span>
+  <h2>③ 합성곱의 출력 한 칸은 퍼셉트론 하나</h2>
+  <p>출력 한 칸은 <code>f(w·x + b)</code>입니다. 윈도우의 9칸이 입력, 필터의 9개 값이 가중치, 편향이 b입니다. 필터는 모든 위치에서 <b>같은 값을 공유</b>하고, 연결은 윈도우 안의 9칸으로만 이어집니다.</p>
+  <div class="lab">
+    <div class="t">직접 해 보기 · 입력 칸을 누르면 0~3으로 바뀌고, 필터 칸은 직접 입력(−5~5)합니다</div>
+    <div class="btns">필터 예: <button id="f0">책 예제</button><button id="f1">세로 에지</button><button id="f2">가로 에지</button><button id="f3">전부 1</button></div>
+    <div class="btns" id="cpos">윈도우 위치:
+      <button data-k="0" class="on">(0,0)</button><button data-k="1">(0,1)</button><button data-k="2">(1,0)</button><button data-k="3">(1,1)</button></div>
+    <div class="row">
+      <div class="col"><div id="cX"></div><div class="cap">입력 (4,4)<br>노랑 = 선택한 윈도우</div></div>
+      <div class="op">⊛</div>
+      <div class="col"><div id="cF"></div><div class="cap">필터 (3,3) = 가중치</div></div>
+    </div>
+    <div class="say" id="csay"></div>
+    <h3>편향 b 바꿔 보기</h3>
+    <div class="btns"><label for="bias">편향 b = <b id="bval">3</b></label><input type="range" id="bias" min="-30" max="12" value="3" step="1" style="flex:1;min-width:160px"></div>
+    <div class="row">
+      <div class="col"><div id="z0"></div><div class="cap">편향 전 (합성곱 결과)</div></div>
+      <div class="op">+ b →</div>
+      <div class="col"><div id="z1"></div><div class="cap">편향을 더한 값</div></div>
+      <div class="op">ReLU →</div>
+      <div class="col"><div id="z2"></div><div class="cap">ReLU 후<br>(꺼진 칸은 취소선)</div></div>
+    </div>
+    <div class="say" id="bsay"></div>
+  </div>
+  <div class="try"><b class="t">해볼 것</b>
+    <ul>
+      <li>편향을 올리고 내려도 "편향을 더한 값"에서 칸끼리의 차이(최댓값−최솟값)는 그대로입니다. 편향 하나만으로는 모양이 안 바뀝니다.</li>
+      <li>편향을 −10, −16까지 내리면 ReLU 뒤에서 약하게 반응한 칸부터 꺼집니다. 편향은 "얼마나 강해야 반응하나"의 기준선입니다.</li>
+      <li>필터를 "세로 에지"로 바꾸고 입력 칸을 눌러 세로 경계를 만들어 보세요. 경계 근처에서만 큰 값이 나옵니다.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ ④ im2col ============ -->
+<section class="card" id="im2col">
+  <span class="tag">7.4.2 · p.243~245</span>
+  <h2>④ im2col: 윈도우를 한 줄로 펴서 행렬 곱 한 번</h2>
+  <p>필터를 적용하는 영역 하나가 행렬의 <b>한 행</b>이 되고, 필터는 <b>한 열</b>로 펴집니다. 행렬 곱 한 번이면 모든 위치의 결과가 동시에 나옵니다. 위 ③의 입력·필터를 그대로 씁니다(③에서 바꾸면 여기도 바뀝니다).</p>
+  <div class="lab">
+    <div class="t">직접 해 보기 · 행을 골라 보세요</div>
+    <div class="btns" id="kpos">행 선택:
+      <button data-k="0" class="on">행 0</button><button data-k="1">행 1</button><button data-k="2">행 2</button><button data-k="3">행 3</button><button id="knext">다음 ↗</button></div>
+    <div class="row" style="justify-content:center">
+      <div class="col"><div id="iX"></div><div class="cap">입력 (4,4)<br>노랑 = 선택한 윈도우</div></div>
+      <div class="op">→</div>
+      <div class="col"><div id="iCol"></div><div class="cap">im2col 결과 (4,9)<br>행 = 윈도우, 열 = 윈도우 안 9칸</div></div>
+      <div class="op">×</div>
+      <div class="col"><div id="iF"></div><div class="cap">필터를 편 열 (9,1)</div></div>
+      <div class="op">=</div>
+      <div class="col"><div id="iR"></div><div class="cap">(4,1)</div></div>
+      <div class="op">→</div>
+      <div class="col"><div id="iO"></div><div class="cap">reshape (2,2)</div></div>
+    </div>
+    <div class="say" id="isay"></div>
+  </div>
+  <div class="try"><b class="t">해볼 것</b>
+    <ul><li>③의 필터를 바꾸면 행렬 곱 결과가 어떻게 달라지는지, 슬라이딩 계산(③)과 같은 값인지 비교해 보세요.</li><li>행 0과 행 1을 비교하면 윈도우가 한 칸 옮겨졌을 뿐인데 9칸 중 6칸이 겹칩니다. 이 겹침이 아래 ⑤의 "메모리 팽창"의 원인입니다.</li></ul>
+  </div>
+</section>
+
+<!-- ============ ⑤ 계산기 ============ -->
+<section class="card" id="calc">
+  <span class="tag">7.4.3 · 7.4.4</span>
+  <h2>⑤ shape과 메모리를 미리 계산해 보기</h2>
+  <p>합성곱 → 풀링에서 각 단계의 shape은 이렇게 변합니다. 값을 바꾸면 col, col_W, 출력 shape과 im2col의 메모리 배율, 완전연결과의 매개변수 수 비교가 바로 나옵니다.</p>
+  <div class="lab">
+    <div class="t">직접 해 보기</div>
+    <div class="btns">예시: <button id="pr0">MNIST (책 7.5)</button><button id="pr1">책 7.4.3 예</button><button id="pr2">same 패딩</button><button id="pr3">224×224, 7×7</button></div>
+    <div class="fld" id="cfld"></div>
+    <div class="scroll" style="margin-top:12px"><table class="t" id="ctab"></table></div>
+  </div>
+  <div class="try"><b class="t">해볼 것</b>
+    <ul><li>MNIST 예시에서 <b>stride를 2로</b> 바꾸면 (28−5)/2+1 = 12.5가 되어 빨간 경고가 뜹니다. 책 구현은 <code>int()</code>로 잘라 12로 계산합니다.</li><li>pad=2로 바꾸면 출력이 입력과 같은 28이 되고, 메모리 배율도 올라갑니다.</li><li>"풀링 reshape" 행에서 채널이 많을수록 행이 늘어나는 것을 확인하세요(⑥에서 이유를 봅니다).</li></ul>
+  </div>
+</section>
+
+<!-- ============ ⑥ 채널 분리 ============ -->
+<section class="card" id="chan">
+  <span class="tag">7.4.4 · p.247~249</span>
+  <h2>⑥ 풀링이 채널을 따로 처리하는 방법</h2>
+  <p>풀링 구현의 핵심은 <code>col.reshape(-1, pool_h*pool_w)</code> 한 줄입니다. im2col 한 행은 (채널, 높이, 너비) 순서라서 채널 하나가 연속된 4칸을 차지하고, 4칸씩 끊으면 <b>행 하나 = (위치, 채널) 하나</b>가 됩니다.</p>
+  <div class="lab">
+    <div class="t">직접 해 보기 · 채널 3개, 4×4 입력</div>
+    <div class="btns" id="chpos">윈도우 위치:
+      <button data-k="0" class="on">위치 0</button><button data-k="1">위치 1</button><button data-k="2">위치 2</button><button data-k="3">위치 3</button></div>
+    <div class="btns" id="chmode">구현: <button data-m="with" class="on">reshape(-1, 4) 있음</button><button data-m="without">reshape 없음</button></div>
+    <div class="row" id="chgrids"></div>
+    <div class="scroll"><table class="t" id="chtab" style="margin-top:10px"></table></div>
+    <div class="say" id="chsay"></div>
+  </div>
+  <div class="try"><b class="t">해볼 것</b>
+    <ul><li>"reshape 없음"으로 바꾸면 위치마다 12칸 전체에서 최댓값 하나만 남아 채널 정보가 사라집니다.</li><li>"있음"에서 행 번호 = 위치 × 3 + 채널인 것을 표에서 확인하세요.</li></ul>
+  </div>
+</section>
+
+<!-- ============ ⑦ 코드 ============ -->
+<section class="card" id="code">
+  <span class="tag">7.4.3 · 7.4.4 코드</span>
+  <h2>⑦ 책의 구현 코드, 줄마다 읽기</h2>
+  <p>위에서 만져 본 것이 코드의 어느 줄에 해당하는지 대응시켜 보세요. 예시는 MNIST(입력 (10,1,28,28), 필터 (30,1,5,5), stride 1, pad 0)입니다.</p>
+  <details open><summary>Convolution.forward</summary>
+<pre>def forward(self, x):
+    FN, C, FH, FW = self.W.shape          # (30, 1, 5, 5)
+    N, C, H, W = x.shape                  # (10, 1, 28, 28)
+    out_h = int(1 + (H + 2*self.pad - FH) / self.stride)   # 24   ← ⑤의 OH 식
+    out_w = int(1 + (W + 2*self.pad - FW) / self.stride)   # 24
+    col   = im2col(x, FH, FW, self.stride, self.pad)       # (5760, 25)  ← ④
+    col_W = self.W.reshape(FN, -1).T                       # (25, 30)    필터를 열로
+    out   = np.dot(col, col_W) + self.b                    # (5760, 30)  ← ③ w·x + b 를 한 번에
+    out   = out.reshape(N, out_h, out_w, -1).transpose(0, 3, 1, 2)   # (10, 30, 24, 24)
+    return out</pre></details>
+  <details><summary>Pooling.forward</summary>
+<pre>def forward(self, x):
+    N, C, H, W = x.shape                  # 앞 층 출력 (10, 30, 24, 24)
+    out_h = int(1 + (H - self.pool_h) / self.stride)       # 12
+    out_w = int(1 + (W - self.pool_w) / self.stride)       # 12
+    col = im2col(x, self.pool_h, self.pool_w, self.stride, self.pad)   # (1440, 120)
+    col = col.reshape(-1, self.pool_h*self.pool_w)         # (43200, 4)  ← ⑥ 채널 분리
+    arg_max = np.argmax(col, axis=1)                       # 역전파용으로 최댓값 위치 저장
+    out = np.max(col, axis=1)                              # (43200,)    ← ① 최댓값
+    out = out.reshape(N, out_h, out_w, C).transpose(0, 3, 1, 2)   # (10, 30, 12, 12)
+    return out</pre></details>
+  <details><summary>역전파 한눈에 보기</summary>
+    <p><b>합성곱</b>: Affine 계층과 같은 식입니다. <code>dW = colᵀ·dout</code>, <code>dcol = dout·col_Wᵀ</code>. 그 뒤 <code>col2im</code>이 겹친 칸을 <b>더해서</b> 입력 모양으로 되돌립니다(한 입력 칸이 여러 윈도우에서 쓰였으니 기울기도 합쳐야 하기 때문).</p>
+    <p><b>풀링</b>: 순전파에서 저장한 <code>arg_max</code> 위치에만 <code>dout</code>을 보내고 나머지는 0입니다. ReLU의 역전파와 같은 발상입니다.</p>
+  </details>
+</section>
+
+<!-- ============ ⑧ 의문 정리 ============ -->
+<section class="card" id="qa">
+  <span class="tag">공부하며 나온 질문</span>
+  <h2>⑧ 의문 정리</h2>
+  <p>공부하다 나온 질문과 답입니다. 관련 데모가 있는 것은 해당 위치로 연결했습니다.</p>
+
+  <details class="qa" open><summary>Q1. 필터를 퍼셉트론의 가중치로 보면, 연결선이 뻗어가는 것과 같은가?</summary>
+  <div class="a">
+    <p><b>네, 같은 구조입니다.</b> 출력 한 칸은 <code>f(w·x + b)</code>입니다. 윈도우 9칸이 입력, 필터 9개 값이 가중치, 편향이 b인 퍼셉트론 하나입니다(<a href="#perc">③</a>, <a href="#im2col">④</a>). 완전연결 계층과 다른 점은 두 가지뿐입니다.</p>
+    <table class="t"><tr><th></th><th>완전연결(Affine)</th><th>합성곱</th></tr>
+      <tr><td>한 출력이 연결된 입력</td><td>전체 입력</td><td>윈도우 안의 칸만(국소 연결)</td></tr>
+      <tr><td>출력 칸마다 가중치</td><td>모두 다른 값</td><td>모든 위치에서 같은 필터 공유</td></tr></table>
+    <p>입력 (1,28,28)에서 출력 (30,24,24)를 만들 때 매개변수는 완전연결이 13,564,800개(편향 포함), 합성곱(필터 30개 5×5)이 780개입니다. ⑤ 계산기에서 MNIST 예시로 확인할 수 있습니다. 합성곱은 "완전연결에서 대부분의 연결을 지우고, 남은 연결의 가중치를 위치끼리 묶은 것"입니다. 학습할 때 필터의 기울기는 모든 위치에서 온 기울기를 <b>합한 값</b>입니다.</p>
+  </div></details>
+
+  <details class="qa" open><summary>Q2. 그림 7-12에서 편향을 더해도 출력이 그대로인 것 같은데, 편향의 의미는?</summary>
+  <div class="a">
+    <p>편향을 더하면 값은 바뀌지만 <b>모든 칸이 같은 만큼</b> 바뀌어서 칸끼리의 차이(모양)는 그대로입니다. 편향의 역할은 <b>활성화 함수(ReLU)와 만났을 때</b> 드러납니다. 편향은 "얼마나 강해야 반응했다고 칠지"의 기준선(퍼셉트론의 임계값 θ = −b)입니다.</p>
+    <p><a href="#perc">③</a>의 슬라이더로 b를 −10, −16까지 내리면 ReLU 뒤에서 약하게 반응한 칸부터 꺼집니다. 필터 하나에 편향 하나이고 모든 출력 칸에 같은 값을 더합니다(shape (FN,1,1)).</p>
+  </div></details>
+
+  <details class="qa" open><summary>Q3. 윈도우 3, stride 2는 어떻게 되나? (윈도우 3, stride 3이 아닐 때)</summary>
+  <div class="a">
+    <p>4×4 입력이면 OH = 1 + (4−3)/2 = 1.5로 나누어떨어지지 않고, 책 구현은 <code>int()</code>로 <b>1</b>을 씁니다. 윈도우는 한 번만 놓이고 마지막 행·열은 쓰이지 않습니다. 5×5 입력이면 OH = 2로 딱 맞고 가운데 열이 겹칩니다. <a href="#stride">①-2</a>의 예시 버튼으로 바로 볼 수 있습니다.</p>
+    <p>이런 "윈도우가 stride보다 큰" 겹치는 풀링은 실제로 쓰입니다. AlexNet이 3×3 윈도우를 stride 2로 적용합니다(55→27, (55−3)/2+1 = 27). 책이 "윈도우 = stride가 보통"이라고 한 것은 가장 단순한 경우를 말한 것입니다. 출처는 맨 아래 링크를 보세요.</p>
+  </div></details>
+
+  <details class="qa" open><summary>Q4. "학습할 매개변수가 없다"는 사용자 설정으로 구동되는 명령어 같은 것인가?</summary>
+  <div class="a">
+    <p>네, 그 느낌이 맞습니다. 다만 <b>설정값</b>과 <b>학습 매개변수</b>를 구분하면 정확해집니다.</p>
+    <table class="t"><tr><th>계층</th><th>사람이 미리 정하는 설정값</th><th>학습으로 정해지는 값</th></tr>
+      <tr><td>합성곱</td><td>필터 개수·크기, stride, pad</td><td>필터 안의 숫자, 편향</td></tr>
+      <tr><td>풀링</td><td>윈도우 크기, stride</td><td><b>없음</b></td></tr>
+      <tr><td>Affine</td><td>출력 뉴런 수</td><td>가중치 W, 편향 b</td></tr>
+      <tr><td>ReLU</td><td>없음</td><td>없음</td></tr></table>
+    <p>풀링은 "최댓값을 고른다"는 규칙이 고정되어 있고 인자(크기, stride)만 넘기는 함수 호출에 가깝습니다. 풀링에도 <b>역전파는 일어납니다</b>(최댓값이었던 위치로만 기울기가 전달). 갱신할 값이 없을 뿐입니다. ⑤ 계산기의 "풀링 매개변수 0개" 행에서도 확인할 수 있습니다.</p>
+  </div></details>
+
+  <details class="qa" open><summary>Q5. 윈도우가 3×2처럼 정사각형이 아니면 stride는 어떻게 정하나?</summary>
+  <div class="a">
+    <p><b>가로·세로에 각각 따로</b> 정합니다. "윈도우 = stride" 규칙은 축마다 성립합니다.</p>
+<pre>윈도우 (3, 2)  →  stride (3, 2)      # 세로 3칸씩, 가로 2칸씩
+OH = 1 + (H − pool_h) / stride_h
+OW = 1 + (W − pool_w) / stride_w</pre>
+    <p>6×6 입력이면 OH = 2, OW = 3이라 출력은 (2,3)이고 겹침도 건너뜀도 없습니다. stride를 숫자 하나(3)로 통일하면 가로에서 열 2, 5를 건너뛰고, 2로 통일하면 세로가 겹칩니다. <a href="#stride">①-2</a>에서 둘째·셋째 예시를 비교해 보세요.</p>
+    <p>책 구현은 윈도우는 <code>pool_h, pool_w</code>로 따로 받지만 stride는 숫자 하나를 가로·세로에 똑같이 씁니다. 그래서 3×2에 (3,2) stride는 지금 코드로 표현할 수 없고 <code>im2col</code>의 stride도 확장해야 합니다. PyTorch는 정수 하나 또는 (높이, 너비) 튜플을 받고, stride를 생략하면 kernel_size와 같아집니다.</p>
+<pre>pool = nn.MaxPool2d(kernel_size=(3, 2))   # stride 생략 → (3, 2)</pre>
+    <p>실무에서는 정사각형 윈도우가 거의 대부분입니다.</p>
+  </div></details>
+</section>
+
+<footer>
+  <p>참고 (책 밖 보충): PyTorch에서는 im2col과 같은 일을 하는 <a href="https://docs.pytorch.org/docs/main/generated/torch.nn.Unfold.html">torch.nn.Unfold</a>가 있고, NVIDIA GPU 라이브러리는 im2col 행렬을 통째로 만들지 않는 <a href="https://docs.nvidia.com/cutlass/latest/media/docs/cpp/implicit_gemm_convolution.html">Implicit GEMM</a> 방식을 씁니다.</p>
+  <p>의문 정리의 출처:
+  <a href="https://learnopencv.com/understanding-alexnet">Understanding AlexNet (LearnOpenCV)</a> ·
+  <a href="https://courses.cs.washington.edu/courses/cse493g1/23sp/schedule/lectures/lecture13.pdf">UW CSE 493G1 강의 13 (AlexNet 층별 크기와 풀링 매개변수 0개)</a> ·
+  <a href="https://sites.cc.gatech.edu/classes/AY2025/cs7643_fall/assets/L8_CNN.pdf">Georgia Tech CS 7643 L8 (풀링의 하이퍼파라미터)</a> ·
+  <a href="https://docs.pytorch.org/docs/main/generated/torch.nn.MaxPool2d.html">torch.nn.MaxPool2d 문서</a></p>
+  <p>이 페이지의 숫자는 모두 이 페이지 안에서 직접 계산합니다. 책 쪽수는 인쇄 쪽번호 기준입니다.</p>
+</footer>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const fmt = n => n.toLocaleString('ko-KR');
+
+/* 2차원 배열을 표로 그린다. cls(i,j)는 칸의 클래스 문자열을 돌려준다. */
+function grid(v, cls, size){
+  let h = '<table class="g ' + (size||'') + '">';
+  for(let i=0;i<v.length;i++){
+    h += '<tr>';
+    for(let j=0;j<v[i].length;j++){
+      h += '<td class="' + (cls ? cls(i,j) : '') + '" data-i="' + i + '" data-j="' + j + '">' + v[i][j] + '</td>';
+    }
+    h += '</tr>';
+  }
+  return h + '</table>';
+}
+function setActive(container, attr, val){
+  container.querySelectorAll('button[data-'+attr+']').forEach(b => b.classList.toggle('on', b.dataset[attr] === String(val)));
+}
+
+/* ============ ① 풀링 스테퍼 ============ */
+const P_INIT = [[1,2,1,0],[0,1,2,3],[3,0,1,2],[2,4,0,1]];
+let P = P_INIT.map(r => r.slice()), ps = 2, pst = 2, pstep = 0, pshowAll = false;
+
+function pRender(){
+  const oh = Math.floor((4 - ps)/pst) + 1, exact = ((4 - ps) % pst === 0), n = oh*oh;
+  if(pstep >= n) pstep = n - 1;
+  const win = k => ({r: Math.floor(k/oh)*pst, c: (k%oh)*pst});
+  const inWin = (k,i,j) => { const w = win(k); return i>=w.r && i<w.r+ps && j>=w.c && j<w.c+ps; };
+  const maxOf = k => { const w = win(k); let m = -1; for(let a=0;a<ps;a++) for(let b=0;b<ps;b++) m = Math.max(m, P[w.r+a][w.c+b]); return m; };
+  const last = pshowAll ? n - 1 : pstep;
+  $('pin').innerHTML = grid(P, (i,j) => {
+    let c = 'clk big';
+    if(!pshowAll && inWin(pstep,i,j)) c += ' cur';
+    else { for(let k=0;k<=last;k++) if(inWin(k,i,j)) { c += ' done'; break; } }
+    return c;
+  }, 'big');
+  const o = [];
+  for(let a=0;a<oh;a++){ o.push([]); for(let b=0;b<oh;b++){ const k = a*oh+b; o[a].push(k <= last ? maxOf(k) : '·'); } }
+  $('pout').innerHTML = grid(o, (i,j) => (!pshowAll && i*oh+j === pstep) ? 'cur' : '', 'big');
+  $('poutcap').textContent = '출력 (' + oh + ',' + oh + ')';
+  const w = win(pstep), vals = [];
+  for(let a=0;a<ps;a++) for(let b=0;b<ps;b++) vals.push(P[w.r+a][w.c+b]);
+  let s = '<b>윈도우 ' + (pstep+1) + '/' + n + '</b> = [' + vals.join(', ') + '] → max = <b>' + maxOf(pstep) + '</b><br>' +
+          '출력 크기 OH = 1 + (4 − ' + ps + ') / ' + pst + ' = 1 + ' + (4-ps) + '/' + pst + ' = ' + (1 + (4-ps)/pst).toFixed(2).replace(/\.00$/,'');
+  s += exact ? ' <span class="ok">(나누어떨어짐)</span>' : ' <span class="warn">(나누어떨어지지 않음 → 책 구현은 int()로 ' + oh + '으로 자르고, 끝의 일부 칸은 쓰이지 않음)</span>';
+  if(ps !== pst) s += '<br>윈도우 크기 ≠ stride입니다. 책은 보통 같은 값으로 둡니다' + (pst < ps ? '(지금은 윈도우가 겹칩니다)' : '(지금은 건너뛰는 칸이 있습니다)') + '.';
+  $('psay').innerHTML = s;
+}
+$('ps').onchange = e => { ps = +e.target.value; pstep = 0; pshowAll = false; pRender(); };
+$('pst').onchange = e => { pst = +e.target.value; pstep = 0; pshowAll = false; pRender(); };
+$('pprev').onclick = () => { pshowAll = false; pstep = Math.max(0, pstep-1); pRender(); };
+$('pnext').onclick = () => { pshowAll = false; pstep++; pRender(); };
+$('pall').onclick = () => { pshowAll = true; pRender(); };
+$('preset').onclick = () => { P = P_INIT.map(r => r.slice()); pstep = 0; pshowAll = false; pRender(); };
+$('pin').onclick = e => { const t = e.target.closest('td'); if(!t) return; const i = +t.dataset.i, j = +t.dataset.j; P[i][j] = (P[i][j] + 1) % 10; pRender(); };
+
+/* ============ ② 강건성 실험 ============ */
+function mulberry(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a>>>15, 1|a); t = t + Math.imul(t ^ t>>>7, 61|t) ^ t; return ((t ^ t>>>14)>>>0) / 4294967296; }; }
+function rSample(rng, vmax){ const a = []; for(let i=0;i<8;i++){ a.push([]); for(let j=0;j<9;j++) a[i].push(Math.floor(rng()*vmax)); } return a; }
+function rCols(M, off){ return M.map(r => r.slice(off, off+8)); }
+function pool2(A){ const o = []; for(let i=0;i<4;i++){ o.push([]); for(let j=0;j<4;j++){ let m = -1; for(let a=0;a<2;a++) for(let b=0;b<2;b++) m = Math.max(m, A[2*i+a][2*j+b]); o[i].push(m); } } return o; }
+let rSeed = 7;
+function rRender(){
+  const vmax = +$('vmax').value, rng = mulberry(rSeed);
+  const M = rSample(rng, vmax), A = rCols(M, 0), B = rCols(M, 1), pa = pool2(A), pb = pool2(B);
+  let sIn = 0, sOut = 0;
+  for(let i=0;i<8;i++) for(let j=0;j<8;j++) if(A[i][j] === B[i][j]) sIn++;
+  for(let i=0;i<4;i++) for(let j=0;j<4;j++) if(pa[i][j] === pb[i][j]) sOut++;
+  $('rA').innerHTML = grid(A, null, 'sm');
+  $('rB').innerHTML = grid(B, (i,j) => A[i][j] === B[i][j] ? 'same' : '', 'sm');
+  $('rpA').innerHTML = grid(pa, null, 'big');
+  $('rpB').innerHTML = grid(pb, (i,j) => pa[i][j] === pb[i][j] ? 'same' : 'diff', 'big');
+  $('rsay').innerHTML = '이 예시: 입력이 같은 칸 <b>' + sIn + '/64</b> (' + Math.round(sIn/64*100) + '%) → 풀링 출력이 같은 칸 <b>' + sOut + '/16</b> (' + Math.round(sOut/16*100) + '%)';
+  const rng2 = mulberry(12345), T = 2000; let tin = 0, tout = 0;
+  for(let t=0;t<T;t++){
+    const m = rSample(rng2, vmax), a = rCols(m,0), b = rCols(m,1), x = pool2(a), y = pool2(b);
+    for(let i=0;i<8;i++) for(let j=0;j<8;j++) if(a[i][j] === b[i][j]) tin++;
+    for(let i=0;i<4;i++) for(let j=0;j<4;j++) if(x[i][j] === y[i][j]) tout++;
+  }
+  const pin = tin/(T*64)*100, pout = tout/(T*16)*100;
+  $('rbars').innerHTML =
+    '<div class="bar"><span class="lbl">입력이 같은 칸</span><span class="track"><span class="fill" style="width:' + pin + '%;display:block"></span></span><span class="val">' + pin.toFixed(1) + '%</span></div>' +
+    '<div class="bar"><span class="lbl">풀링 출력이 같은 칸</span><span class="track"><span class="fill o" style="width:' + pout + '%;display:block"></span></span><span class="val">' + pout.toFixed(1) + '%</span></div>';
+}
+$('vmax').onchange = rRender;
+$('rnew').onclick = () => { rSeed++; rRender(); };
+
+/* ============ ③ 퍼셉트론과 편향 / ④ im2col (입력·필터 공유) ============ */
+const X = [[1,2,3,0],[0,1,2,3],[3,0,1,2],[2,3,0,1]];
+const F = [[2,0,1],[0,1,2],[1,0,2]];
+const FPRESET = [
+  [[2,0,1],[0,1,2],[1,0,2]],
+  [[1,0,-1],[1,0,-1],[1,0,-1]],
+  [[1,1,1],[0,0,0],[-1,-1,-1]],
+  [[1,1,1],[1,1,1],[1,1,1]]
+];
+let csel = 0, ksel = 0, bias = 3;
+const posOf = k => ({r: Math.floor(k/2), c: k%2});
+function sumAt(k){ const p = posOf(k); let s = 0; for(let i=0;i<3;i++) for(let j=0;j<3;j++) s += X[p.r+i][p.c+j]*F[i][j]; return s; }
+const Z = () => [0,1,2,3].map(sumAt);
+
+function buildFilterInputs(){
+  let h = '<table class="g big">';
+  for(let i=0;i<3;i++){ h += '<tr>'; for(let j=0;j<3;j++) h += '<td class="fw"><input type="number" min="-5" max="5" step="1" id="fw' + i + j + '" value="' + F[i][j] + '" aria-label="필터 ' + i + ',' + j + '"></td>'; h += '</tr>'; }
+  $('cF').innerHTML = h + '</table>';
+  for(let i=0;i<3;i++) for(let j=0;j<3;j++){
+    $('fw'+i+j).addEventListener('input', e => { let v = parseInt(e.target.value, 10); if(isNaN(v)) v = 0; F[i][j] = Math.max(-5, Math.min(5, v)); renderCompute(); renderIm2col(); });
+  }
+}
+function setFilter(idx){
+  for(let i=0;i<3;i++) for(let j=0;j<3;j++){ F[i][j] = FPRESET[idx][i][j]; $('fw'+i+j).value = F[i][j]; }
+  renderCompute(); renderIm2col();
+}
+function renderCompute(){
+  const p = posOf(csel);
+  $('cX').innerHTML = grid(X, (i,j) => 'clk big' + ((i>=p.r && i<p.r+3 && j>=p.c && j<p.c+3) ? ' cur' : ''), 'big');
+  const terms = [], z = sumAt(csel);
+  for(let i=0;i<3;i++) for(let j=0;j<3;j++) terms.push(X[p.r+i][p.c+j] + '×' + (F[i][j] < 0 ? '(' + F[i][j] + ')' : F[i][j]));
+  $('csay').innerHTML = '위치 (' + p.r + ',' + p.c + ')의 퍼셉트론: w·x = ' + terms.join(' + ') + ' = <b>' + z + '</b><br>+ b(' + bias + ') = <b>' + (z + bias) + '</b> → ReLU → <b>' + Math.max(0, z + bias) + '</b>';
+  const zs = Z(), zb = zs.map(v => v + bias), za = zb.map(v => Math.max(0, v));
+  const to2 = a => [[a[0],a[1]],[a[2],a[3]]];
+  $('z0').innerHTML = grid(to2(zs), (i,j) => (i*2+j === csel) ? 'cur' : '', 'big');
+  $('z1').innerHTML = grid(to2(zb), (i,j) => (i*2+j === csel) ? 'cur' : '', 'big');
+  $('z2').innerHTML = grid(to2(za), (i,j) => ((i*2+j === csel) ? 'cur ' : '') + (za[i*2+j] === 0 ? 'off' : ''), 'big');
+  const spread0 = Math.max(...zs) - Math.min(...zs), spread1 = Math.max(...zb) - Math.min(...zb), off = za.filter(v => v === 0).length;
+  $('bval').textContent = bias;
+  $('bsay').innerHTML = '칸끼리의 차이(최댓값−최솟값): 편향 전 <b>' + spread0 + '</b> → 편향 후 <b>' + spread1 + '</b> ' + (spread0 === spread1 ? '<span class="ok">(같음: 편향은 모양을 바꾸지 않음)</span>' : '') +
+    '<br>ReLU 뒤에 꺼진 칸: <b>' + off + '/4</b>' + (off > 0 ? ' <span class="warn">(편향이 낮아 약한 반응이 사라짐)</span>' : '');
+}
+$('cpos').onclick = e => { const b = e.target.closest('button[data-k]'); if(!b) return; csel = +b.dataset.k; setActive($('cpos'), 'k', csel); renderCompute(); };
+$('cX').onclick = e => { const t = e.target.closest('td'); if(!t) return; const i = +t.dataset.i, j = +t.dataset.j; X[i][j] = (X[i][j] + 1) % 4; renderCompute(); renderIm2col(); };
+$('bias').oninput = e => { bias = +e.target.value; renderCompute(); };
+['f0','f1','f2','f3'].forEach((id, idx) => $(id).onclick = () => setFilter(idx));
+
+function colRows(){ const rows = []; for(let q=0;q<4;q++){ const p = posOf(q), r = []; for(let i=0;i<3;i++) for(let j=0;j<3;j++) r.push(X[p.r+i][p.c+j]); rows.push(r); } return rows; }
+function renderIm2col(){
+  const p = posOf(ksel), rows = colRows(), fv = [].concat(F[0], F[1], F[2]), res = Z();
+  $('iX').innerHTML = grid(X, (i,j) => (i>=p.r && i<p.r+3 && j>=p.c && j<p.c+3) ? 'cur' : '', 'big');
+  $('iCol').innerHTML = grid(rows, (i,j) => i === ksel ? 'cur' : '', 'sm');
+  $('iF').innerHTML = grid(fv.map(v => [v]), null, 'sm');
+  $('iR').innerHTML = grid(res.map(v => [v]), (i) => i === ksel ? 'cur' : '', 'big');
+  $('iO').innerHTML = grid([[res[0],res[1]],[res[2],res[3]]], (i,j) => (i*2+j === ksel) ? 'cur' : '', 'big');
+  const terms = rows[ksel].map((v,t) => v + '×' + (fv[t] < 0 ? '(' + fv[t] + ')' : fv[t]));
+  $('isay').innerHTML = '행 ' + ksel + ' = 윈도우를 위에서부터 한 줄로 편 값 [' + rows[ksel].join(', ') + ']<br>행 ' + ksel + ' · 필터열 = ' + terms.join(' + ') + ' = <b>' + res[ksel] + '</b> (슬라이딩으로 계산한 ③의 "편향 전" 값과 같습니다. 4개 행을 한 번의 행렬 곱으로 동시에 구합니다.)';
+}
+$('kpos').onclick = e => {
+  if(e.target.id === 'knext'){ ksel = (ksel + 1) % 4; }
+  else { const b = e.target.closest('button[data-k]'); if(!b) return; ksel = +b.dataset.k; }
+  setActive($('kpos'), 'k', ksel); renderIm2col();
+};
+
+/* ============ ⑤ shape · 메모리 계산기 ============ */
+const FIELDS = [['N','데이터 수 N',10],['C','채널 C',1],['H','높이 H',28],['W','너비 W',28],['FN','필터 개수 FN',30],['FH','필터 높이 FH',5],['FW','필터 너비 FW',5],['S','stride',1],['PAD','pad',0],['PL','풀링 크기(=stride)',2]];
+const PRESETS = [
+  {N:10,C:1,H:28,W:28,FN:30,FH:5,FW:5,S:1,PAD:0,PL:2},
+  {N:10,C:3,H:7,W:7,FN:10,FH:5,FW:5,S:1,PAD:0,PL:2},
+  {N:1,C:3,H:32,W:32,FN:16,FH:3,FW:3,S:1,PAD:1,PL:2},
+  {N:1,C:3,H:224,W:224,FN:64,FH:7,FW:7,S:2,PAD:3,PL:2}
+];
+function buildCalc(){
+  $('cfld').innerHTML = FIELDS.map(f => '<label for="c_' + f[0] + '">' + f[1] + '<input type="number" id="c_' + f[0] + '" min="' + (f[0]==='PAD'?0:1) + '" value="' + f[2] + '"></label>').join('');
+  FIELDS.forEach(f => $('c_'+f[0]).addEventListener('input', calcRender));
+}
+function setPreset(i){ FIELDS.forEach(f => $('c_'+f[0]).value = PRESETS[i][f[0]]); calcRender(); }
+function calcRender(){
+  const v = {}; FIELDS.forEach(f => { let x = parseInt($('c_'+f[0]).value, 10); if(isNaN(x) || x < (f[0]==='PAD'?0:1)) x = (f[0]==='PAD'?0:1); v[f[0]] = x; });
+  const rawH = (v.H + 2*v.PAD - v.FH)/v.S + 1, rawW = (v.W + 2*v.PAD - v.FW)/v.S + 1;
+  const oh = Math.floor(rawH), ow = Math.floor(rawW), ok = Number.isInteger(rawH) && Number.isInteger(rawW);
+  if(oh < 1 || ow < 1){ $('ctab').innerHTML = '<tr><td class="warn">필터가 입력(패딩 포함)보다 커서 출력이 없습니다. 필터 크기나 pad를 조정하세요.</td></tr>'; return; }
+  const rows = v.N*oh*ow, cols = v.C*v.FH*v.FW;
+  const poh = Math.floor((oh - v.PL)/v.PL) + 1, pow_ = Math.floor((ow - v.PL)/v.PL) + 1;
+  const colN = rows*cols, inN = v.N*v.C*v.H*v.W, ratio = colN/inN;
+  const convP = v.FN*v.C*v.FH*v.FW + v.FN, fcP = (v.C*v.H*v.W)*(v.FN*oh*ow) + v.FN*oh*ow;
+  const T = (a,b,c,cls) => '<tr><td>' + a + '</td><td><code>' + b + '</code></td><td' + (cls ? ' class="' + cls + '"' : '') + '>' + c + '</td></tr>';
+  let h = '<tr><th>단계</th><th>식 · 코드</th><th>값</th></tr>';
+  h += T('출력 높이/너비', 'OH = (H+2P−FH)/S + 1, OW도 같은 식', (Number.isInteger(rawH) ? oh : rawH.toFixed(2)) + ' / ' + (Number.isInteger(rawW) ? ow : rawW.toFixed(2)) + (ok ? ' <span class="ok">(나누어떨어짐)</span>' : ' <span class="warn">(나누어떨어지지 않음 → int()로 ' + oh + ' / ' + ow + '로 계산)</span>'));
+  h += T('im2col 결과 col', '(N·OH·OW, C·FH·FW)', '(' + fmt(rows) + ', ' + fmt(cols) + ')');
+  h += T('필터 열 col_W', 'W.reshape(FN, −1).T → (C·FH·FW, FN)', '(' + fmt(cols) + ', ' + fmt(v.FN) + ')');
+  h += T('행렬 곱 결과', 'np.dot(col, col_W) → (N·OH·OW, FN)', '(' + fmt(rows) + ', ' + fmt(v.FN) + ')');
+  h += T('합성곱 출력', 'reshape(N,OH,OW,−1).transpose(0,3,1,2)', '(' + v.N + ', ' + v.FN + ', ' + oh + ', ' + ow + ')');
+  if(poh >= 1 && pow_ >= 1){
+    h += T('풀링 im2col', '(N·OH\'·OW\', C\'·pool²), C\' = FN', '(' + fmt(v.N*poh*pow_) + ', ' + fmt(v.FN*v.PL*v.PL) + ')');
+    h += T('풀링 reshape', 'col.reshape(−1, pool²)', '(' + fmt(v.N*poh*pow_*v.FN) + ', ' + (v.PL*v.PL) + ')');
+    h += T('풀링 출력', 'max(axis=1) → reshape → transpose', '(' + v.N + ', ' + v.FN + ', ' + poh + ', ' + pow_ + ')');
+  } else h += T('풀링', '', '<span class="warn">합성곱 출력이 풀링 크기보다 작습니다</span>');
+  h += T('풀링 매개변수', '학습할 값 없음 (설정값: 크기, stride)', '0개');
+  h += T('im2col 메모리', '입력 ' + fmt(inN) + '개 → col ' + fmt(colN) + '개', '<b>' + ratio.toFixed(2) + '배</b>');
+  h += T('합성곱 매개변수', 'FN·C·FH·FW + FN', fmt(convP) + '개');
+  h += T('완전연결로 같은 입출력을 만든다면', '(C·H·W)·(FN·OH·OW) + FN·OH·OW', fmt(fcP) + '개 (합성곱의 ' + fmt(Math.round(fcP/convP)) + '배)');
+  $('ctab').innerHTML = h;
+}
+['pr0','pr1','pr2','pr3'].forEach((id, i) => $(id).onclick = () => setPreset(i));
+
+/* ============ ⑥ 채널 분리 ============ */
+const CH = [
+  [[4,5,0,3],[3,3,1,3],[5,2,4,6],[0,0,4,2]],
+  [[1,6,6,0],[1,5,1,5],[0,1,4,3],[0,3,5,6]],
+  [[0,2,3,0],[1,3,5,3],[3,6,0,1],[1,1,0,2]]
+];
+let chPos = 0, chMode = 'with';
+const winVals = (c, k) => { const r = Math.floor(k/2)*2, q = (k%2)*2; return [CH[c][r][q], CH[c][r][q+1], CH[c][r+1][q], CH[c][r+1][q+1]]; };
+function chRender(){
+  const r0 = Math.floor(chPos/2)*2, c0 = (chPos%2)*2;
+  $('chgrids').innerHTML = CH.map((g, c) => '<div class="col">' + grid(g, (i,j) => (i>=r0 && i<r0+2 && j>=c0 && j<c0+2) ? 'cur' : '', 'big') + '<div class="cap">채널 ' + c + '</div></div>').join('');
+  let h = '';
+  if(chMode === 'with'){
+    h = '<tr><th>행</th><th>의미 (위치×3+채널)</th><th>reshape(−1,4)의 한 행</th><th>max</th></tr>';
+    for(let k=0;k<4;k++) for(let c=0;c<3;c++){
+      const w = winVals(c,k);
+      h += '<tr' + (k === chPos ? ' style="background:var(--hl);color:var(--hl-ink)"' : '') + '><td>' + (k*3+c) + '</td><td>위치 ' + k + ' · 채널 ' + c + '</td><td>[' + w.join(', ') + ']</td><td><b>' + Math.max(...w) + '</b></td></tr>';
+    }
+    $('chsay').innerHTML = '결과 shape: <b>(12, 4) → max → (12,) → reshape(1,2,2,3) → transpose → (1, 3, 2, 2)</b>. 채널 3개가 그대로 남습니다. 지금 위치 ' + chPos + '의 세 채널 최댓값은 [' + [0,1,2].map(c => Math.max(...winVals(c, chPos))).join(', ') + ']입니다.';
+  } else {
+    h = '<tr><th>행</th><th>의미</th><th>채널 0, 1, 2의 4칸을 이어 붙인 12칸</th><th>max</th></tr>';
+    for(let k=0;k<4;k++){
+      const all = [0,1,2].flatMap(c => winVals(c,k));
+      h += '<tr' + (k === chPos ? ' style="background:var(--hl);color:var(--hl-ink)"' : '') + '><td>' + k + '</td><td>위치 ' + k + '</td><td>[' + all.join(', ') + ']</td><td><b>' + Math.max(...all) + '</b></td></tr>';
+    }
+    $('chsay').innerHTML = '<span class="warn">결과 shape: (4, 12) → max → (4,) → 채널 정보가 사라짐.</span> 위치 ' + chPos + '은 세 채널을 통틀어 최댓값 하나만 남습니다. 풀링은 채널마다 따로 해야 하므로 이 방식은 틀립니다.';
+  }
+  $('chtab').innerHTML = h;
+}
+$('chpos').onclick = e => { const b = e.target.closest('button[data-k]'); if(!b) return; chPos = +b.dataset.k; setActive($('chpos'), 'k', chPos); chRender(); };
+$('chmode').onclick = e => { const b = e.target.closest('button[data-m]'); if(!b) return; chMode = b.dataset.m; setActive($('chmode'), 'm', chMode); chRender(); };
+
+/* ============ ①-2 윈도우 · stride 실험실 ============ */
+const SF = ['H','W','PH','PW','SH','SW'];
+const SPRE = [
+  {H:4,W:4,PH:3,PW:3,SH:2,SW:2,same:false},
+  {H:6,W:6,PH:3,PW:2,SH:3,SW:2,same:false},
+  {H:6,W:6,PH:3,PW:2,SH:3,SW:3,same:false},
+  {H:5,W:5,PH:3,PW:3,SH:2,SW:2,same:false},
+  {H:55,W:55,PH:3,PW:3,SH:2,SW:2,same:false}
+];
+function sRead(){
+  const v = {};
+  SF.forEach(k => { let x = parseInt($('s_'+k).value, 10); if(isNaN(x) || x < 1) x = 1; v[k] = Math.min(x, 60); });
+  return v;
+}
+function sRender(){
+  if($('s_same').checked){ $('s_SH').value = $('s_PH').value; $('s_SW').value = $('s_PW').value; }
+  $('s_SH').disabled = $('s_SW').disabled = $('s_same').checked;
+  const v = sRead();
+  if(v.PH > v.H || v.PW > v.W){ $('sgrid').innerHTML = ''; $('scap').textContent = ''; $('ssay').innerHTML = '<span class="warn">윈도우가 입력보다 큽니다. 윈도우를 줄이거나 입력을 키우세요.</span>'; return; }
+  const rawH = (v.H - v.PH)/v.SH + 1, rawW = (v.W - v.PW)/v.SW + 1;
+  const oh = Math.floor(rawH), ow = Math.floor(rawW);
+  const cnt = Array.from({length: v.H}, () => new Array(v.W).fill(0));
+  for(let a=0;a<oh;a++) for(let b=0;b<ow;b++) for(let i=0;i<v.PH;i++) for(let j=0;j<v.PW;j++) cnt[a*v.SH+i][b*v.SW+j]++;
+  const small = v.H*v.W <= 144;
+  $('sgrid').innerHTML = grid(cnt, (i,j) => cnt[i][j] === 0 ? 'u0' : (cnt[i][j] >= 2 ? 'u2' : ''), small ? 'big' : 'tiny');
+  $('scap').textContent = '입력 (' + v.H + ',' + v.W + ') · 칸 안의 숫자 = 그 칸이 쓰인 횟수' + (small ? '' : ' (칸이 많아 숫자는 생략, 색으로만 표시)');
+  let n0 = 0, n2 = 0; cnt.forEach(r => r.forEach(c => { if(c === 0) n0++; else if(c >= 2) n2++; }));
+  const exH = Number.isInteger(rawH), exW = Number.isInteger(rawW);
+  const f = (name, H, P, S, raw, ex) => name + ' = 1 + (' + H + ' − ' + P + ') / ' + S + ' = ' + (ex ? raw : raw.toFixed(2)) + (ex ? ' <span class="ok">(나누어떨어짐)</span>' : ' <span class="warn">(나누어떨어지지 않음 → int()로 ' + Math.floor(raw) + ')</span>');
+  let verdict;
+  if(n0 === 0 && n2 === 0) verdict = '<span class="ok">딱 맞음: 겹침도 건너뜀도 없습니다 (윈도우 = stride인 경우).</span>';
+  else { const parts = []; if(n2 > 0) parts.push('겹치는 칸 ' + n2 + '개 (겹치는 풀링)'); if(n0 > 0) parts.push('<span class="warn">쓰이지 않는 칸 ' + n0 + '개</span>'); verdict = parts.join(' · '); }
+  $('ssay').innerHTML = f('OH', v.H, v.PH, v.SH, rawH, exH) + '<br>' + f('OW', v.W, v.PW, v.SW, rawW, exW) + '<br>출력 크기 <b>(' + oh + ', ' + ow + ')</b> · ' + verdict;
+}
+SF.forEach(k => $('s_'+k).addEventListener('input', sRender));
+$('s_same').addEventListener('change', sRender);
+['sp0','sp1','sp2','sp3','sp4'].forEach((id, i) => $(id).onclick = () => {
+  const p = SPRE[i]; SF.forEach(k => $('s_'+k).value = p[k]); $('s_same').checked = p.same; sRender();
+});
+
+/* ============ 시작 ============ */
+buildFilterInputs(); buildCalc();
+pRender(); sRender(); rRender(); renderCompute(); renderIm2col(); calcRender(); chRender();
+</script>
+</body>
+</html>
