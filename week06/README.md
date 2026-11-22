@@ -40,12 +40,10 @@ CNN의 합성곱 연산 방식, 패딩과 스트라이드를 이용한 연산 �
 
 ## 📎 공부 내용 정리
 
-- `AID_DL_Chapter(6.2).pdf`
-- `AID_DL_Chapter(6.3).pdf`
-- `AID_DL_Chapter(6.4).html(html파일)`
-- `AID_DL_Chapter(6.5).html(html파일)`
-- `Chapter6_code1.ipynb`
-- `Chapter6_code2.ipynb`
+- `AID_DL_Chapter(7.1, 7.2.5).pdf`
+- `AID_DL_Chapter(7.2.6, 7.3).pdf`
+- `AID_DL_Chapter(7.4, 7.5).html(html파일)`
+- `AID_DL_Chapter(7.6, 7.7).html(html파일)`
 
 
 
