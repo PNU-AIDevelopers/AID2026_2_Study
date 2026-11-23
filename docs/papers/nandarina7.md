@@ -4,3 +4,4 @@
 - [Auto-Encoding Variational Bayes](https://arxiv.org/abs/1312.6114) - VAE #reviewed
 - [Generative Adversarial Networks](https://arxiv.org/abs/1406.2661) - GAN #reviewed
 - [NICE: Non-linear Independent Components Estimation](https://arxiv.org/abs/1410.8516) - Non-linear Independent Components Estimation
+- [Scalable Diffusion Models with Transformers](https://arxiv.org/abs/2212.09748) - DiT
