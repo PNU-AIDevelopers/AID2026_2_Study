@@ -54,7 +54,7 @@ AID 엔지니어 트랙의 AI Agent 스터디 팀입니다.
 | 4주차 | 5장: 반응, 계획, 도구 사용, 멀티에이전트, CoT 프롬프팅 패턴 | ✅ 완료 |
 | 5주차 | 6~7장: AutoGen, LangChain, LangGraph, CrewAI, LlamaIndex, AutoGPT, Colab 환경 구성과 API 키 설정 | ✅ 완료 |
 | 6주차 | 8장: LangChain, AutoGPT, AutoGen, LlamaIndex, CrewAI, LangGraph를 이용한 AI Agent 구현 | ✅ 완료 |
-| 7주차 | 9장: LangSmith, 디버깅, LangGraph 연동, 성능 평가, 모니터링 | ⬜ 예정 |
+| 7주차 | 9장: LangSmith, 디버깅, LangGraph 연동, 성능 평가, 모니터링 | ✅ 완료 |
 | 8주차 | (선택) 10~11장: M365 Copilot, M365 Copilot Agent, 일반 AI Agent와의 비교 | ⬜ 예정 |
 
 진행 상태 예시
@@ -71,6 +71,7 @@ AID 엔지니어 트랙의 AI Agent 스터디 팀입니다.
 
 ### 최근 업데이트
 
+- 7주차 활동 기록 추가
 - 6주차 활동 기록 추가
 - 5주차 활동 기록 추가
 - 4주차 활동 기록 추가
