@@ -1,0 +1,58 @@
+{
+  "data_sha256": "47f20c507b8f10527302fd238f4ecd94aa047915183a8f8e754d175fa00deadf",
+  "audit": [
+    {
+      "sheet": "펜 경로",
+      "n": 71,
+      "t_min": 0.0,
+      "t_max": 2.333333,
+      "min_dt": 6.510000000001237e-05,
+      "max_dt": 0.06666667,
+      "duplicate_rows": 0
+    },
+    {
+      "sheet": "그림 경로",
+      "n": 169,
+      "t_min": 0.0,
+      "t_max": 6.994067,
+      "min_dt": 0.031211000000000322,
+      "max_dt": 0.5249329999999999,
+      "duplicate_rows": 0
+    }
+  ],
+  "split_counts": {
+    "train": 42,
+    "validation": 12,
+    "test": 13
+  },
+  "selected_sgd": {
+    "candidate": "d2_eta0.03_alpha0.001",
+    "degree": 2,
+    "eta": 0.03,
+    "alpha": 0.001,
+    "epoch": 48,
+    "train_rmse": 0.006369603719387941,
+    "validation_rmse": 0.009868501169215158
+  },
+  "selected_model": "SGD selected",
+  "best_k": 4,
+  "pca": [
+    {
+      "sheet": "펜 경로",
+      "pc1_variance": 0.9993194729858002,
+      "reconstruction_rmse": 0.0018050029250474863
+    },
+    {
+      "sheet": "그림 경로",
+      "pc1_variance": 0.9987726679602762,
+      "reconstruction_rmse": 0.002116208897349379
+    }
+  ],
+  "versions": {
+    "python": "3.12.14",
+    "numpy": "2.5.5",
+    "sklearn": "1.9.1",
+    "matplotlib": "3.11.2",
+    "openpyxl": "3.1.5"
+  }
+}
